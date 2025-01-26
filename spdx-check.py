@@ -7,7 +7,8 @@ import os
 import re
 
 default_license = 'Apache-2.0'
-verbosity = 4
+#verbosity = 2
+verbosity = 0
 
 def suffix_after_dot(s):
     """If the input string s contains a '.' character, return a string
@@ -31,11 +32,13 @@ def spdx_line_errors_warnings(lines, expected_license):
         if 'SPDX-License-Identifier' in line:
             match = re.search(r"^\s*(#|\*|//|/\*)?\s*SPDX-License-Identifier:\s+(.*)$", line)
             if match:
-                print("dbg fullmatch True: %s" % (line))
+                if verbosity >= 3:
+                    print("dbg fullmatch True: %s" % (line))
                 license_id_lines.append(line)
-                license = match.group(1)
+                license = match.group(2)
             else:
-                print("dbg fullmatch False: %s" % (line))
+                if verbosity >= 3:
+                    print("dbg fullmatch False: %s" % (line))
                 malformed_id_lines.append(line)
     errors = []
     warnings = []
@@ -53,12 +56,15 @@ def spdx_line_errors_warnings(lines, expected_license):
         errors = None
     if len(warnings) == 0:
         warnings = None
-    return errors, warnings
+    if errors:
+        license = None
+    return errors, warnings, license
 
 
 def walk_directory(path, default_license):
     spdx_errors = {}
     spdx_warnings = {}
+    spdx_good = {}
     for root, dirs, files in os.walk(path):
         #print("Current directory:", root)
         #for dir_name in dirs:
@@ -87,21 +93,27 @@ def walk_directory(path, default_license):
             expected_license = default_license
             if verbosity >= 3:
                 print("Checking file: %s" % (fullname))
-            errors, warnings = spdx_line_errors_warnings(lines,
-                                                         expected_license)
+            errors, warnings, license = spdx_line_errors_warnings(
+                lines, expected_license)
             if errors:
                 spdx_errors[fullname] = errors
             if warnings:
                 spdx_warnings[fullname] = warnings
+            if not (errors or warnings):
+                spdx_good[fullname] = license
 
+    if verbosity >= 1:
+        for fullname in sorted(spdx_errors.keys()):
+            for msg in spdx_errors[fullname]:
+                print("ERROR: %s: %s" % (fullname, msg))
+        for fullname in sorted(spdx_warnings.keys()):
+            for msg in spdx_warnings[fullname]:
+                print("WARNING: %s: %s" % (fullname, msg))
+        for fullname in sorted(spdx_good.keys()):
+            print("GOOD: %s: %s" % (spdx_good[fullname], fullname))
     print("Found %d files with errors" % (len(spdx_errors)))
-    for fullname in spdx_errors.keys():
-        for msg in spdx_errors[fullname]:
-            print("ERROR: %s: %s" % (fullname, msg))
     print("Found %d files with warnings" % (len(spdx_warnings)))
-    for fullname in spdx_warnings.keys():
-        for msg in spdx_warnings[fullname]:
-            print("WARNING: %s: %s" % (fullname, msg))
+    print("Found %s files with neither errors nor warnings" % (len(spdx_good)))
 
 
 walk_directory("./", default_license)
