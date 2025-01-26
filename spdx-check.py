@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import argparse
+import collections
 import json
 import os
 import re
@@ -97,6 +98,7 @@ def spdx_line_errors_warnings(lines):
 
 def walk_directory(path, config):
     spdx_errors = {}
+    spdx_errors_filename_suffixes = collections.defaultdict(int)
     spdx_warnings = {}
     spdx_good = {}
     spdx_ignored_suffix = {}
@@ -133,6 +135,10 @@ def walk_directory(path, config):
             errors, warnings, license = spdx_line_errors_warnings(lines)
             if errors:
                 spdx_errors[fullname] = errors
+                key = suffix
+                if suffix is None:
+                    key = "(none)"
+                spdx_errors_filename_suffixes[key] += 1
             if warnings:
                 spdx_warnings[fullname] = warnings
             if not (errors or warnings):
@@ -159,6 +165,9 @@ def walk_directory(path, config):
     print("Found %d files where exception occurred while reading its contents" % (len(exception_reading)))
     print("Found %d files where SPDX check was skipped because of file name suffix" % (len(spdx_ignored_suffix)))
     print("Found %d files with errors" % (len(spdx_errors)))
+    for suffix in sorted(spdx_errors_filename_suffixes.keys()):
+        print("    %d error files has file name suffix '.%s'"
+              "" % (spdx_errors_filename_suffixes[suffix], suffix))
     print("Found %d files with warnings" % (len(spdx_warnings)))
     print("Found %s files with neither errors nor warnings" % (len(spdx_good)))
 
