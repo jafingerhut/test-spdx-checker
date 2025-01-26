@@ -46,6 +46,15 @@ def suffix_after_dot(s):
         suffix = None
     return suffix
 
+# Comment characters in various programming languages / configuration
+# file formats:
+
+# // - C, C++, Java, P4
+# /* - C, C++, Java, P4
+# # - Bash, Python
+# " - Vim configuration file
+# ;; - Emacs Elisp
+
 def spdx_line_errors_warnings(lines):
     license_id_lines = []
     malformed_id_lines = []
@@ -55,7 +64,7 @@ def spdx_line_errors_warnings(lines):
             partial_match = 'SPDX-License-Identifier' in line
             print("dbg partialmatch %s: %s" % (partial_match, line))
         if 'SPDX-License-Identifier' in line:
-            match = re.search(r"^\s*(#|\*|//|/\*)?\s*SPDX-License-Identifier:\s+(.*)$", line)
+            match = re.search(r"""^\s*(#|\*|//|/\*|"|;;)?\s*SPDX-License-Identifier:\s+(.*)$""", line)
             if match:
                 if args.verbosity >= 3:
                     print("dbg fullmatch True: %s" % (line))
@@ -91,6 +100,7 @@ def walk_directory(path, config):
     spdx_warnings = {}
     spdx_good = {}
     spdx_ignored_suffix = {}
+    exception_reading = {}
     for root, dirs, files in os.walk(path):
         # TODO: The skipping of directories by name should be
         # configured in the config file in some way, not hard-coded.
@@ -112,8 +122,7 @@ def walk_directory(path, config):
                     contents = f.read()
                 lines = contents.splitlines()
             except Exception as e:
-                print("Exception occurred while reading file '%s': %s"
-                      "" % (fullname, e))
+                exception_reading[fullname] = e
                 continue
             # TODO: Generalize the following line to make the expected
             # license depend upon a configurable list of expected
@@ -129,6 +138,13 @@ def walk_directory(path, config):
             if not (errors or warnings):
                 spdx_good[fullname] = license
 
+    for fullname in sorted(exception_reading.keys()):
+        print("EXCEPTION: while reading file '%s': %s"
+              "" % (fullname, exception_reading[fullname]))
+    if args.verbosity >= 2:
+        for fullname in sorted(spdx_ignored_suffix.keys()):
+            print("IGNORED SUFFIX: %s: %s" % (spdx_ignored_suffix[fullname],
+                                              fullname))
     if args.verbosity >= 1:
         for fullname in sorted(spdx_errors.keys()):
             for msg in spdx_errors[fullname]:
@@ -136,11 +152,12 @@ def walk_directory(path, config):
         for fullname in sorted(spdx_warnings.keys()):
             for msg in spdx_warnings[fullname]:
                 print("WARNING: %s: %s" % (fullname, msg))
-        for fullname in sorted(spdx_ignored_suffix.keys()):
-            print("IGNORED SUFFIX: %s: %s" % (spdx_ignored_suffix[fullname],
-                                              fullname))
+    if args.verbosity >= 2:
         for fullname in sorted(spdx_good.keys()):
             print("GOOD: %s: %s" % (spdx_good[fullname], fullname))
+
+    print("Found %d files where exception occurred while reading its contents" % (len(exception_reading)))
+    print("Found %d files where SPDX check was skipped because of file name suffix" % (len(spdx_ignored_suffix)))
     print("Found %d files with errors" % (len(spdx_errors)))
     print("Found %d files with warnings" % (len(spdx_warnings)))
     print("Found %s files with neither errors nor warnings" % (len(spdx_good)))
