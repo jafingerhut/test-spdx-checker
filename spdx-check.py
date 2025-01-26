@@ -3,12 +3,24 @@
 # Copyright 2025 Andy Fingerhut
 # SPDX-License-Identifier: BSD-3-Clause
 
+import argparse
 import os
 import re
 
 default_license = 'Apache-2.0'
-#verbosity = 2
-verbosity = 0
+
+parser = argparse.ArgumentParser(
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    description="""
+This program reads source files in a specified directory, and
+recursively all of its subdirectories, checking that they have
+SPDX-License-Identifier comment lines with the expected software
+license ids.
+""")
+parser.add_argument('--root-dir', dest='rootdir', type=str)
+parser.add_argument('--config-file', dest='configfile', type=str)
+parser.add_argument('--verbosity', dest='verbosity', type=int, default=0)
+args, remaining_args = parser.parse_known_args()
 
 def suffix_after_dot(s):
     """If the input string s contains a '.' character, return a string
@@ -26,18 +38,18 @@ def spdx_line_errors_warnings(lines, expected_license):
     malformed_id_lines = []
     for line in lines:
         line = line.rstrip()
-        if verbosity >= 4:
+        if args.verbosity >= 4:
             partial_match = 'SPDX-License-Identifier' in line
             print("dbg partialmatch %s: %s" % (partial_match, line))
         if 'SPDX-License-Identifier' in line:
             match = re.search(r"^\s*(#|\*|//|/\*)?\s*SPDX-License-Identifier:\s+(.*)$", line)
             if match:
-                if verbosity >= 3:
+                if args.verbosity >= 3:
                     print("dbg fullmatch True: %s" % (line))
                 license_id_lines.append(line)
                 license = match.group(2)
             else:
-                if verbosity >= 3:
+                if args.verbosity >= 3:
                     print("dbg fullmatch False: %s" % (line))
                 malformed_id_lines.append(line)
     errors = []
@@ -72,7 +84,7 @@ def walk_directory(path, default_license):
         if (root[-5:] == '/.git') or ('/.git/' in root):
             # Ignore any files in a directory named .git, or its
             # subdirectories.
-            if verbosity >= 3:
+            if args.verbosity >= 3:
                 print("Skipping .git directory: %s" % (root))
             continue
         for file_name in files:
@@ -91,7 +103,7 @@ def walk_directory(path, default_license):
             # license depend upon a configurable list of expected
             # licenses for a subset of the files.
             expected_license = default_license
-            if verbosity >= 3:
+            if args.verbosity >= 3:
                 print("Checking file: %s" % (fullname))
             errors, warnings, license = spdx_line_errors_warnings(
                 lines, expected_license)
@@ -102,7 +114,7 @@ def walk_directory(path, default_license):
             if not (errors or warnings):
                 spdx_good[fullname] = license
 
-    if verbosity >= 1:
+    if args.verbosity >= 1:
         for fullname in sorted(spdx_errors.keys()):
             for msg in spdx_errors[fullname]:
                 print("ERROR: %s: %s" % (fullname, msg))
@@ -116,4 +128,8 @@ def walk_directory(path, default_license):
     print("Found %s files with neither errors nor warnings" % (len(spdx_good)))
 
 
-walk_directory("./", default_license)
+rootdir = "."
+if args.rootdir:
+    rootdir = args.rootdir
+
+walk_directory(rootdir, default_license)
