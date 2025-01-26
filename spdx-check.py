@@ -7,6 +7,7 @@ import os
 import re
 
 default_license = 'Apache-2.0'
+verbosity = 4
 
 def suffix_after_dot(s):
     """If the input string s contains a '.' character, return a string
@@ -24,12 +25,17 @@ def spdx_line_errors_warnings(lines, expected_license):
     malformed_id_lines = []
     for line in lines:
         line = line.rstrip()
+        if verbosity >= 4:
+            partial_match = 'SPDX-License-Identifier' in line
+            print("dbg partialmatch %s: %s" % (partial_match, line))
         if 'SPDX-License-Identifier' in line:
             match = re.search(r"^\s*(#|\*|//|/\*)?\s*SPDX-License-Identifier:\s+(.*)$", line)
             if match:
+                print("dbg fullmatch True: %s" % (line))
                 license_id_lines.append(line)
                 license = match.group(1)
             else:
+                print("dbg fullmatch False: %s" % (line))
                 malformed_id_lines.append(line)
     errors = []
     warnings = []
@@ -57,6 +63,12 @@ def walk_directory(path, default_license):
         #print("Current directory:", root)
         #for dir_name in dirs:
         #    print("Subdirectory:", dir_name)
+        if (root[-5:] == '/.git') or ('/.git/' in root):
+            # Ignore any files in a directory named .git, or its
+            # subdirectories.
+            if verbosity >= 3:
+                print("Skipping .git directory: %s" % (root))
+            continue
         for file_name in files:
             suffix = suffix_after_dot(file_name)
             fullname = os.path.join(root, file_name)
@@ -73,6 +85,8 @@ def walk_directory(path, default_license):
             # license depend upon a configurable list of expected
             # licenses for a subset of the files.
             expected_license = default_license
+            if verbosity >= 3:
+                print("Checking file: %s" % (fullname))
             errors, warnings = spdx_line_errors_warnings(lines,
                                                          expected_license)
             if errors:
@@ -80,9 +94,11 @@ def walk_directory(path, default_license):
             if warnings:
                 spdx_warnings[fullname] = warnings
 
+    print("Found %d files with errors" % (len(spdx_errors)))
     for fullname in spdx_errors.keys():
         for msg in spdx_errors[fullname]:
             print("ERROR: %s: %s" % (fullname, msg))
+    print("Found %d files with warnings" % (len(spdx_warnings)))
     for fullname in spdx_warnings.keys():
         for msg in spdx_warnings[fullname]:
             print("WARNING: %s: %s" % (fullname, msg))
