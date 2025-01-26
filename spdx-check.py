@@ -4,9 +4,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import argparse
+import json
 import os
 import re
 
+# TODO: This value should be read from the config file
 default_license = 'Apache-2.0'
 
 parser = argparse.ArgumentParser(
@@ -22,6 +24,17 @@ parser.add_argument('--config-file', dest='configfile', type=str)
 parser.add_argument('--verbosity', dest='verbosity', type=int, default=0)
 args, remaining_args = parser.parse_known_args()
 
+config = {}
+if args.configfile:
+    with open(args.configfile, 'r') as f:
+        contents = f.read()
+    config = json.loads(contents)
+
+if 'ignored_suffixes' in config:
+    config['ignored_suffixes'] = set(config['ignored_suffixes'])
+else:
+    config['ignored_suffixes'] = set()
+
 def suffix_after_dot(s):
     """If the input string s contains a '.' character, return a string
     that is the part of s after the last '.' character.  If the input
@@ -33,7 +46,7 @@ def suffix_after_dot(s):
         suffix = None
     return suffix
 
-def spdx_line_errors_warnings(lines, expected_license):
+def spdx_line_errors_warnings(lines):
     license_id_lines = []
     malformed_id_lines = []
     for line in lines:
@@ -73,14 +86,14 @@ def spdx_line_errors_warnings(lines, expected_license):
     return errors, warnings, license
 
 
-def walk_directory(path, default_license):
+def walk_directory(path, config):
     spdx_errors = {}
     spdx_warnings = {}
     spdx_good = {}
+    spdx_ignored_suffix = {}
     for root, dirs, files in os.walk(path):
-        #print("Current directory:", root)
-        #for dir_name in dirs:
-        #    print("Subdirectory:", dir_name)
+        # TODO: The skipping of directories by name should be
+        # configured in the config file in some way, not hard-coded.
         if (root[-5:] == '/.git') or ('/.git/' in root):
             # Ignore any files in a directory named .git, or its
             # subdirectories.
@@ -88,9 +101,12 @@ def walk_directory(path, default_license):
                 print("Skipping .git directory: %s" % (root))
             continue
         for file_name in files:
-            suffix = suffix_after_dot(file_name)
             fullname = os.path.join(root, file_name)
+            suffix = suffix_after_dot(file_name)
             #print("Suffix: %s File: %s" % (suffix, fullname))
+            if suffix in config.get('ignored_suffixes', {}):
+                spdx_ignored_suffix[fullname] = suffix
+                continue
             try:
                 with open(fullname, 'r') as f:
                     contents = f.read()
@@ -102,11 +118,10 @@ def walk_directory(path, default_license):
             # TODO: Generalize the following line to make the expected
             # license depend upon a configurable list of expected
             # licenses for a subset of the files.
-            expected_license = default_license
+            #expected_license = default_license
             if args.verbosity >= 3:
                 print("Checking file: %s" % (fullname))
-            errors, warnings, license = spdx_line_errors_warnings(
-                lines, expected_license)
+            errors, warnings, license = spdx_line_errors_warnings(lines)
             if errors:
                 spdx_errors[fullname] = errors
             if warnings:
@@ -121,6 +136,9 @@ def walk_directory(path, default_license):
         for fullname in sorted(spdx_warnings.keys()):
             for msg in spdx_warnings[fullname]:
                 print("WARNING: %s: %s" % (fullname, msg))
+        for fullname in sorted(spdx_ignored_suffix.keys()):
+            print("IGNORED SUFFIX: %s: %s" % (spdx_ignored_suffix[fullname],
+                                              fullname))
         for fullname in sorted(spdx_good.keys()):
             print("GOOD: %s: %s" % (spdx_good[fullname], fullname))
     print("Found %d files with errors" % (len(spdx_errors)))
@@ -132,4 +150,4 @@ rootdir = "."
 if args.rootdir:
     rootdir = args.rootdir
 
-walk_directory(rootdir, default_license)
+walk_directory(rootdir, config)
