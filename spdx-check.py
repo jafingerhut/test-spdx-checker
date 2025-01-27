@@ -119,17 +119,45 @@ def walk_directory(path, config):
     spdx_ignored_suffix = {}
     exception_reading = {}
     ignore_directories = config.get('ignore_directories', [])
+    ignore_paths = config.get('ignore_paths', [])
     skipped_directories = []
     for root, dirs, files in os.walk(path):
         dir_without_rootdir = root[len(path)+1:]
         skip_dir = False
-        for ignore_dir in ignore_directories:
-            if dir_without_rootdir.startswith(ignore_dir):
+        # A string in the list ignore_directories is one where if it
+        # is any part of the directory part of a path name, the
+        # directory is skipped.  For example if you put "third-party"
+        # into the list of ignore_directories, then all of these paths
+        # would be skipped:
+        #
+        #     ./other/target-syslibs/third-party
+        #     ./other/target-utils/third-party
+        #     ./other/open-p4studio/pkgsrc/bf-diags/third-party
+        #     ./other/open-p4studio/pkgsrc/bf-utils/third-party
+        #     ./other/open-p4studio/pkgsrc/bf-drivers/third-party
+        for dir in ignore_directories:
+            if root.endswith('/' + dir) or (('/' + dir + '/') in root):
                 skip_dir = True
-                if args.verbosity >= 3:
-                    print("Skipping .git directory: %s" % (root))
                 break
+        # A string in the list ignore_paths is one where it is only
+        # skipped if it matches the _beginning_ of a relative path
+        # name in the walk.  For example, if ignore_paths contains the
+        # string ".github", then these directories would be skipped:
+        #
+        #     .github
+        #     .github/workflows
+        #
+        # but this one would not be skipped:
+        #
+        #     workflows/.github
+        if not skip_dir:
+            for path in ignore_paths:
+                if dir_without_rootdir.startswith(path):
+                    skip_dir = True
+                    break
         if skip_dir:
+            if args.verbosity >= 3:
+                print("Skipping directory: %s" % (root))
             skipped_directories.append(root)
             continue
         for file_name in files:

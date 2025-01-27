@@ -10,8 +10,10 @@
 	"supp",
 	"txt"
     ],
-    "ignore_directories": [
-	".git",
+    "ignore_paths": [
 	".github"
+    ],
+    "ignore_directories": [
+	".git"
     ]
 }

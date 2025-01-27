@@ -14,10 +14,10 @@ for https://github.com/p4lang/p4c
 
 # File types where it is difficult or impossible to include SPDX-License-Identifier lines
 
-A few p4lang repositories use `.patch` as a file name suffix for files
-containing the output of `diff` or similar programs that can be
-applied via the command `patch`.  These cannot have comments added to
-them.
+A few p4lang repositories use `.patch` or `.diff` as a file name
+suffix for files containing the output of `diff` or similar programs
+that can be applied via the command `patch`.  These cannot have
+comments added to them.
 
 Text files with a file name suffix like `.txt` are almost never source
 files.  They are usually documentation.  It is reasonable that they do
@@ -45,6 +45,7 @@ files, even when it is possible it seems like busy-work to try to
 include SPDX-License-Identifier lines within such a file.  Common
 suffixes for these used within p4lang repositories include:
 
++ `.a` - executable code archive
 + `.DS_Store` - Apple Desktop Service Store
 + `.docx` - Microsoft Word 2007+
 + `.eot` - Embedded OpenType
@@ -62,11 +63,13 @@ suffixes for these used within p4lang repositories include:
 + `.pdf`
 + `.png`
 + `.pptx`
++ `.so` - binary shared object library
 + `.ttf` - TrueType Font data
 + `.vsdx` - Microsoft Visio
 + `.whl` - Zip archive data used by Python/pip
 + `.woff` - Web Open Font Format
 + `.woff2` - Web Open Font Format (Version 2)
++ `.zip`
 
 Other binary data file formats appearing in at least some p4lang
 repositories:
@@ -79,6 +82,7 @@ very specific to the library used to manipulate the file format.  It
 also seems more trouble than it is worth to require that they have an
 SPDX-License-Identifier line:
 
++ `.adoc` - AsciiDoc source file, used for P4 specification documents
 + `.csv`
 + `.drawio` - based on XML.  See `.xml`.
 + `.graphml` - based on XML.  See `.xml`.

@@ -19,7 +19,9 @@
 	"txt"
     ],
     "ignore_directories": [
-	".git",
+	".git"
+    ],
+    "ignore_paths": [
 	".github"
     ]
 }
