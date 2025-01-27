@@ -63,6 +63,7 @@
     ],
     "ignore_directories": [
 	".git",
+	".github",
 	"third-party"
     ]
 }
