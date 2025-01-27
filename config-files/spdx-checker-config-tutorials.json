@@ -1,1 +1,13 @@
-{"ignored_suffixes": ["pdf", "png", "json", "md", "txt", "patch"]}
+{
+    "ignored_suffixes": [
+	"json",
+	"md",
+	"patch",
+	"pdf",
+	"png",
+	"txt"
+    ],
+    "ignore_directories": [
+	".git"
+    ]
+}

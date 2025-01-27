@@ -1,1 +1,17 @@
-{"ignored_suffixes": ["md", "json", "gitignore", "gitmodules", "txt", "conf"]}
+{
+    "ignored_suffixes": [
+	"conf",
+	"dockerignore",
+	"gitignore",
+	"gitmodules",
+	"json",
+	"md",
+	"patch",
+	"txt",
+	"xml"
+    ],
+    "ignore_directories": [
+	".git",
+	".github"
+    ]
+}

@@ -1,1 +1,41 @@
-{"ignored_suffixes": ["png", "pdf", "pptx"]}
+{
+    "ignored_suffixes": [
+	"bazel",
+	"bazelignore",
+	"bazelrc",
+	"bazelversion",
+	"bzl",
+	"diff",
+	"drawio",
+	"el",
+	"gitignore",
+	"html",
+	"json",
+	"md",
+	"patch",
+	"png",
+	"png",
+	"pdf",
+	"pptx",
+	"svg",
+	"tex",
+	"toml",
+	"txt",
+	"xml"
+    ],
+    "ignore_directories": [
+	".git",
+	".github",
+	"debian",
+	"testdata/p4_14_errors_outputs",
+	"testdata/p4_14_samples_outputs",
+	"testdata/p4_16_dpdk_errors_outputs",
+	"testdata/p4_16_ebpf_errors_outputs",
+	"testdata/p4_16_errors_outputs",
+	"testdata/p4_16_pna_errors_outputs",
+	"testdata/p4_16_psa_errors_outputs",
+	"testdata/p4_16_samples_outputs",
+	"testdata/p4tc_samples_outputs"
+    ]
+}
+

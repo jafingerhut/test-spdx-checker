@@ -55,6 +55,7 @@ def suffix_after_dot(s):
 # # - Bash, Python
 # " - Vim configuration file
 # ;; - Emacs Elisp
+# % - LaTeX source file
 
 def spdx_line_errors_warnings(lines, config):
     license_id_lines = []
@@ -70,17 +71,12 @@ def spdx_line_errors_warnings(lines, config):
             all_lines_blank = False
         if args.verbosity >= 4:
             partial_match = 'SPDX-License-Identifier' in line
-            print("dbg partialmatch %s: %s" % (partial_match, line))
         if 'SPDX-License-Identifier' in line:
-            match = re.search(r"""^\s*(#|\*|//|/\*|"|;;)?\s*SPDX-License-Identifier:\s+(.*)$""", line)
+            match = re.search(r"""^\s*(#|\*|//|/\*|"|;;|%)?\s*SPDX-License-Identifier:\s+(.*)$""", line)
             if match:
-                if args.verbosity >= 3:
-                    print("dbg fullmatch True: %s" % (line))
                 license_id_lines.append(line)
                 license = match.group(2)
             else:
-                if args.verbosity >= 3:
-                    print("dbg fullmatch False: %s" % (line))
                 malformed_id_lines.append(line)
         for sig in generated_file_signatures:
             if sig in line:
@@ -122,14 +118,19 @@ def walk_directory(path, config):
     spdx_good = {}
     spdx_ignored_suffix = {}
     exception_reading = {}
+    ignore_directories = config.get('ignore_directories', [])
+    skipped_directories = []
     for root, dirs, files in os.walk(path):
-        # TODO: The skipping of directories by name should be
-        # configured in the config file in some way, not hard-coded.
-        if (root[-5:] == '/.git') or ('/.git/' in root):
-            # Ignore any files in a directory named .git, or its
-            # subdirectories.
-            if args.verbosity >= 3:
-                print("Skipping .git directory: %s" % (root))
+        dir_without_rootdir = root[len(path)+1:]
+        skip_dir = False
+        for ignore_dir in ignore_directories:
+            if dir_without_rootdir.startswith(ignore_dir):
+                skip_dir = True
+                if args.verbosity >= 3:
+                    print("Skipping .git directory: %s" % (root))
+                break
+        if skip_dir:
+            skipped_directories.append(root)
             continue
         for file_name in files:
             fullname = os.path.join(root, file_name)
@@ -185,6 +186,7 @@ def walk_directory(path, config):
             print("GOOD: %s: %s" % (spdx_good[fullname], fullname))
 
     print("%d files where exception occurred while reading its contents" % (len(exception_reading)))
+    print("%d directories skipped" % (len(skipped_directories)))
     print("%d files where SPDX check was skipped because of file name suffix" % (len(spdx_ignored_suffix)))
     print("%d files with errors" % (len(spdx_errors)))
     for suffix in sorted(spdx_errors_filename_suffixes.keys()):

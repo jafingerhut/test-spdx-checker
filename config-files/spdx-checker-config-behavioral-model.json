@@ -1,1 +1,17 @@
-{"ignored_suffixes": ["pcap", "bin"]}
+{
+    "ignored_suffixes": [
+	"bin",
+	"cfg",
+	"dockerignore",
+	"gitignore",
+	"json",
+	"md",
+	"pcap",
+	"supp",
+	"txt"
+    ],
+    "ignore_directories": [
+	".git",
+	".github"
+    ]
+}
