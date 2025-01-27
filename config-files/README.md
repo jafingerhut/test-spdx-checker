@@ -80,8 +80,8 @@ also seems more trouble than it is worth to require that they have an
 SPDX-License-Identifier line:
 
 + `.csv`
-+ `.drawio` - based on XML
-+ `.graphml` - based on XML
++ `.drawio` - based on XML.  See `.xml`.
++ `.graphml` - based on XML.  See `.xml`.
 + `.htm`
 + `.html`
 + `.less` - several in p4lang.github.io repo.  Some kind of HTML / web
@@ -93,7 +93,7 @@ SPDX-License-Identifier line:
 + `.spec` - An expected output file produced as output from `p4c-dpdk`
   compiler back end.  Mostly checked in only when used for CI testing
   in p4c repo.
-+ `.svg` - based on XML
++ `.svg` - based on XML.  See `.xml`.
 + `.toml` - Based on Windows INI file format.  Can have comments, but
   only appears to be used in p4lang repos for developers of languages
   like Python and Rust, for the development tools of those programming

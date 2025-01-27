@@ -56,11 +56,18 @@ def suffix_after_dot(s):
 # " - Vim configuration file
 # ;; - Emacs Elisp
 
-def spdx_line_errors_warnings(lines):
+def spdx_line_errors_warnings(lines, config):
     license_id_lines = []
     malformed_id_lines = []
+    generated_file_lines = []
+    generated_file_signatures = config.get('generated_file_signature', [])
+    license = None
+    generated_file = False
+    all_lines_blank = True
     for line in lines:
         line = line.rstrip()
+        if line != "":
+            all_lines_blank = False
         if args.verbosity >= 4:
             partial_match = 'SPDX-License-Identifier' in line
             print("dbg partialmatch %s: %s" % (partial_match, line))
@@ -75,12 +82,22 @@ def spdx_line_errors_warnings(lines):
                 if args.verbosity >= 3:
                     print("dbg fullmatch False: %s" % (line))
                 malformed_id_lines.append(line)
+        for sig in generated_file_signatures:
+            if sig in line:
+                generated_file_lines.append(line)
     errors = []
     warnings = []
     if len(license_id_lines) > 1:
         msg = ("Found more than one (%d) SPDX-License-Identifier line"
                "" % (len(license_id_lines)))
         errors.append(msg)
+    elif len(generated_file_lines) > 0:
+        # No error for auto-generated files.
+        generated_file = True
+        pass
+    elif all_lines_blank:
+        # No error for files where all lines are blank
+        pass
     elif len(license_id_lines) == 0:
         msg = "Found no SPDX-License-Identifier line"
         errors.append(msg)
@@ -93,13 +110,15 @@ def spdx_line_errors_warnings(lines):
         warnings = None
     if errors:
         license = None
-    return errors, warnings, license
+    return errors, warnings, all_lines_blank, generated_file, license
 
 
 def walk_directory(path, config):
     spdx_errors = {}
     spdx_errors_filename_suffixes = collections.defaultdict(int)
+    filenames_without_suffix = []
     spdx_warnings = {}
+    auto_generated_file = {}
     spdx_good = {}
     spdx_ignored_suffix = {}
     exception_reading = {}
@@ -132,16 +151,19 @@ def walk_directory(path, config):
             #expected_license = default_license
             if args.verbosity >= 3:
                 print("Checking file: %s" % (fullname))
-            errors, warnings, license = spdx_line_errors_warnings(lines)
+            errors, warnings, all_lines_blank, generated_file, license = spdx_line_errors_warnings(lines, config)
             if errors:
                 spdx_errors[fullname] = errors
                 key = suffix
                 if suffix is None:
                     key = "(none)"
+                    filenames_without_suffix.append(fullname)
                 spdx_errors_filename_suffixes[key] += 1
             if warnings:
                 spdx_warnings[fullname] = warnings
-            if not (errors or warnings):
+            if generated_file:
+                auto_generated_file[fullname] = True
+            elif not (errors or warnings):
                 spdx_good[fullname] = license
 
     for fullname in sorted(exception_reading.keys()):
@@ -162,14 +184,18 @@ def walk_directory(path, config):
         for fullname in sorted(spdx_good.keys()):
             print("GOOD: %s: %s" % (spdx_good[fullname], fullname))
 
-    print("Found %d files where exception occurred while reading its contents" % (len(exception_reading)))
-    print("Found %d files where SPDX check was skipped because of file name suffix" % (len(spdx_ignored_suffix)))
-    print("Found %d files with errors" % (len(spdx_errors)))
+    print("%d files where exception occurred while reading its contents" % (len(exception_reading)))
+    print("%d files where SPDX check was skipped because of file name suffix" % (len(spdx_ignored_suffix)))
+    print("%d files with errors" % (len(spdx_errors)))
     for suffix in sorted(spdx_errors_filename_suffixes.keys()):
         print("    %d error files has file name suffix '.%s'"
               "" % (spdx_errors_filename_suffixes[suffix], suffix))
-    print("Found %d files with warnings" % (len(spdx_warnings)))
-    print("Found %s files with neither errors nor warnings" % (len(spdx_good)))
+    for fname in filenames_without_suffix:
+        print("    ERROR file without suffix: %s" % (fname))
+    print("%d files with warnings" % (len(spdx_warnings)))
+    print("%d files with signature lines indicating they were auto-generated."
+          "" % (len(auto_generated_file)))
+    print("%s files with neither errors nor warnings" % (len(spdx_good)))
 
 
 rootdir = "."
