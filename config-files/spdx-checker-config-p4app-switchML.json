@@ -1,17 +1,16 @@
 {
     "ignored_suffixes": [
-	"bin",
-	"cfg",
-	"dockerignore",
+	"csv",
 	"gitignore",
-	"json",
+	"gitmodules",
 	"md",
-	"pcap",
-	"supp",
-	"txt"
-    ],
-    "ignore_paths": [
-	".github"
+	"patch",
+	"png",
+	"rst",
+	"txt",
+	"yapf",
+	"yaml",
+	"yml"
     ],
     "ignore_directories": [
 	".git",

@@ -120,8 +120,10 @@ def walk_directory(path, config):
     exception_reading = {}
     ignore_directories = config.get('ignore_directories', [])
     ignore_paths = config.get('ignore_paths', [])
+    all_directories = []
     skipped_directories = []
     for root, dirs, files in os.walk(path):
+        all_directories.append(root)
         dir_without_rootdir = root[len(path)+1:]
         skip_dir = False
         # A string in the list ignore_directories is one where if it
@@ -214,7 +216,8 @@ def walk_directory(path, config):
             print("GOOD: %s: %s" % (spdx_good[fullname], fullname))
 
     print("%d files where exception occurred while reading its contents" % (len(exception_reading)))
-    print("%d directories skipped" % (len(skipped_directories)))
+    print("%d directories skipped out of %d directories total"
+          "" % (len(skipped_directories), len(all_directories)))
     print("%d files where SPDX check was skipped because of file name suffix" % (len(spdx_ignored_suffix)))
     print("%d files with errors" % (len(spdx_errors)))
     for suffix in sorted(spdx_errors_filename_suffixes.keys()):

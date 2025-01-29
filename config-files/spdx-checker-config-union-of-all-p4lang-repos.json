@@ -5,6 +5,7 @@
 	"aif",
 	"aifc",
 	"bazel",
+	"bazelignore",
 	"bazelrc",
 	"bazelversion",
 	"bib",
@@ -15,6 +16,7 @@
 	"conf",
 	"csv",
 	"diff",
+	"dockerignore",
 	"drawio",
 	"DS_Store",
 	"docx",
@@ -32,6 +34,7 @@
 	"jpg",
 	"json",
 	"md",
+	"md5",
 	"mov",
 	"mp4",
 	"odg",
@@ -47,8 +50,10 @@
 	"pptx",
 	"so",
 	"spec",
+	"sty",
 	"sum",
 	"svg",
+	"tex",
 	"toml",
 	"ttf",
 	"txt",
@@ -64,6 +69,7 @@
     "ignore_directories": [
 	".git",
 	".github",
+	"third_party",
 	"third-party"
     ]
 }

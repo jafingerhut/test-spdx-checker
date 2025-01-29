@@ -97,7 +97,9 @@ SPDX-License-Identifier line:
 + `.spec` - An expected output file produced as output from `p4c-dpdk`
   compiler back end.  Mostly checked in only when used for CI testing
   in p4c repo.
++ `.sty` - LaTeX source file for documentation.
 + `.svg` - based on XML.  See `.xml`.
++ `.tex` - LaTeX source file for documentation.
 + `.toml` - Based on Windows INI file format.  Can have comments, but
   only appears to be used in p4lang repos for developers of languages
   like Python and Rust, for the development tools of those programming

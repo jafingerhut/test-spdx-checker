@@ -20,6 +20,7 @@
     ],
     "ignore_directories": [
 	".git"
+	"third_party"
     ],
     "ignore_paths": [
 	".github"

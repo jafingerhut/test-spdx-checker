@@ -1,0 +1,9 @@
+{
+    "ignored_suffixes": [
+	"md"
+    ],
+    "ignore_directories": [
+	".git"
+	"third_party"
+    ]
+}
