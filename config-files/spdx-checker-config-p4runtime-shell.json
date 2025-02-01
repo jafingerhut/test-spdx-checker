@@ -1,0 +1,25 @@
+{
+    "ignored_suffixes": [
+	"cfg",
+	"coveragerc",
+	"dockerignore",
+	"flake8",
+	"gitignore",
+	"md",
+	"toml",
+	"txt"
+    ],
+    "ignore_paths": [
+	".github"
+    ],
+    "ignore_directories": [
+	".git"
+    ],
+    "default_license": "Apache-2.0",
+    "other_licenses": {
+        "LICENSE": {
+            "expected": null,
+            "reason": "top level LICENSE file"
+        }
+    }
+}
