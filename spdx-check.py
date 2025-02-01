@@ -139,6 +139,8 @@ def walk_directory(path, config):
     for root, dirs, files in os.walk(path):
         all_directories.append(root)
         dir_without_rootdir = root[len(path)+1:]
+        #print("dbg path='%s' (len %d) root='%s' dir_without_rootdir='%s'"
+        #      "" % (path, len(path), root, dir_without_rootdir))
         skip_dir = False
         # A string in the list ignore_directories is one where if it
         # is any part of the directory part of a path name, the
@@ -167,8 +169,8 @@ def walk_directory(path, config):
         #
         #     workflows/.github
         if not skip_dir:
-            for path in ignore_paths:
-                if dir_without_rootdir.startswith(path):
+            for tmp_path in ignore_paths:
+                if dir_without_rootdir.startswith(tmp_path):
                     skip_dir = True
                     break
         if skip_dir:
@@ -176,6 +178,8 @@ def walk_directory(path, config):
                 print("Skipping directory: %s" % (root))
             skipped_directories.append(root)
             continue
+        if args.verbosity >= 3:
+            print("Checking directory: %s (without rootdir %s)" % (root, dir_without_rootdir))
         for file_name in files:
             fullname = os.path.join(root, file_name)
             fullname_without_rootdir = os.path.join(dir_without_rootdir,
