@@ -61,7 +61,7 @@ def suffix_after_dot(s):
 # ;; - Emacs Elisp
 # % - LaTeX source file
 
-def spdx_line_errors_warnings(lines, expected_license, config):
+def spdx_line_errors_warnings(lines, expected_license, config, verbose=False):
     license_id_lines = []
     malformed_id_lines = []
     generated_file_lines = []
@@ -82,22 +82,26 @@ def spdx_line_errors_warnings(lines, expected_license, config):
                 license = match.group(2)
             else:
                 malformed_id_lines.append(line)
+        if verbose:
+            print("dbg line='%s'" % (line))
         for sig in generated_file_signatures:
+            if verbose:
+                print("dbg sig='%s' match=%s" % (sig, sig in line))
             if sig in line:
                 generated_file_lines.append(line)
     errors = []
     warnings = []
-    if len(license_id_lines) > 1:
-        msg = ("Found more than one (%d) SPDX-License-Identifier line"
-               "" % (len(license_id_lines)))
-        errors.append(msg)
+    if all_lines_blank:
+        # No error for files where all lines are blank
+        pass
     elif len(generated_file_lines) > 0:
         # No error for auto-generated files.
         generated_file = True
         pass
-    elif all_lines_blank:
-        # No error for files where all lines are blank
-        pass
+    elif len(license_id_lines) > 1:
+        msg = ("Found more than one (%d) SPDX-License-Identifier line"
+               "" % (len(license_id_lines)))
+        errors.append(msg)
     elif len(license_id_lines) == 0:
         if expected_license is None:
             # Then it is expected not to find a license id line
@@ -194,7 +198,10 @@ def walk_directory(path, config):
                 expected_license = config['default_license']
             if args.verbosity >= 3:
                 print("Checking file: %s" % (fullname))
-            errors, warnings, all_lines_blank, generated_file, license = spdx_line_errors_warnings(lines, expected_license, config)
+            extra_debug = False
+            #if fullname_without_rootdir == "go/p4/config/v1/p4info.pb.go":
+            #    extra_debug = True
+            errors, warnings, all_lines_blank, generated_file, license = spdx_line_errors_warnings(lines, expected_license, config, extra_debug)
             if errors:
                 spdx_errors[fullname] = errors
                 key = suffix
@@ -204,10 +211,10 @@ def walk_directory(path, config):
                 spdx_errors_filename_suffixes[key] += 1
             if warnings:
                 spdx_warnings[fullname] = warnings
-            if generated_file:
-                auto_generated_file[fullname] = True
             if all_lines_blank:
                 empty_file[fullname] = True
+            elif generated_file:
+                auto_generated_file[fullname] = True
             elif not (errors or warnings):
                 if (expected_license is None) or (license == expected_license):
                     spdx_good[fullname] = license
