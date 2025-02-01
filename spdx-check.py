@@ -8,6 +8,7 @@ import collections
 import json
 import os
 import re
+import sys
 
 # TODO: This value should be read from the config file
 default_license = 'Apache-2.0'
@@ -31,10 +32,13 @@ if args.configfile:
         contents = f.read()
     config = json.loads(contents)
 
-if 'ignored_suffixes' in config:
-    config['ignored_suffixes'] = set(config['ignored_suffixes'])
-else:
-    config['ignored_suffixes'] = set()
+config['ignored_suffixes'] = set(config.get('ignored_suffixes', []))
+config['other_licenses'] = config.get('other_licenses', {})
+
+if 'default_license' not in config:
+    print("config file must define a key 'default_license' with a string value.",
+          file=sys.stderr)
+    sys.exit(1)
 
 def suffix_after_dot(s):
     """If the input string s contains a '.' character, return a string
@@ -57,7 +61,7 @@ def suffix_after_dot(s):
 # ;; - Emacs Elisp
 # % - LaTeX source file
 
-def spdx_line_errors_warnings(lines, config):
+def spdx_line_errors_warnings(lines, expected_license, config):
     license_id_lines = []
     malformed_id_lines = []
     generated_file_lines = []
@@ -95,8 +99,12 @@ def spdx_line_errors_warnings(lines, config):
         # No error for files where all lines are blank
         pass
     elif len(license_id_lines) == 0:
-        msg = "Found no SPDX-License-Identifier line"
-        errors.append(msg)
+        if expected_license is None:
+            # Then it is expected not to find a license id line
+            pass
+        else:
+            msg = "Found no SPDX-License-Identifier line"
+            errors.append(msg)
     if len(malformed_id_lines) != 0:
         msg = ("Found %d lines with SPDX-License-Identifier but incorrect syntax"
                "" % (len(malformed_id_lines)))
@@ -115,6 +123,8 @@ def walk_directory(path, config):
     filenames_without_suffix = []
     spdx_warnings = {}
     auto_generated_file = {}
+    empty_file = {}
+    spdx_unexpected_license = {}
     spdx_good = {}
     spdx_ignored_suffix = {}
     exception_reading = {}
@@ -164,9 +174,11 @@ def walk_directory(path, config):
             continue
         for file_name in files:
             fullname = os.path.join(root, file_name)
+            fullname_without_rootdir = os.path.join(dir_without_rootdir,
+                                                    file_name)
             suffix = suffix_after_dot(file_name)
             #print("Suffix: %s File: %s" % (suffix, fullname))
-            if suffix in config.get('ignored_suffixes', {}):
+            if suffix in config['ignored_suffixes']:
                 spdx_ignored_suffix[fullname] = suffix
                 continue
             try:
@@ -176,13 +188,13 @@ def walk_directory(path, config):
             except Exception as e:
                 exception_reading[fullname] = e
                 continue
-            # TODO: Generalize the following line to make the expected
-            # license depend upon a configurable list of expected
-            # licenses for a subset of the files.
-            #expected_license = default_license
+            if fullname_without_rootdir in config['other_licenses']:
+                expected_license = config['other_licenses'][fullname_without_rootdir]['expected']
+            else:
+                expected_license = config['default_license']
             if args.verbosity >= 3:
                 print("Checking file: %s" % (fullname))
-            errors, warnings, all_lines_blank, generated_file, license = spdx_line_errors_warnings(lines, config)
+            errors, warnings, all_lines_blank, generated_file, license = spdx_line_errors_warnings(lines, expected_license, config)
             if errors:
                 spdx_errors[fullname] = errors
                 key = suffix
@@ -194,8 +206,16 @@ def walk_directory(path, config):
                 spdx_warnings[fullname] = warnings
             if generated_file:
                 auto_generated_file[fullname] = True
+            if all_lines_blank:
+                empty_file[fullname] = True
             elif not (errors or warnings):
-                spdx_good[fullname] = license
+                if (expected_license is None) or (license == expected_license):
+                    spdx_good[fullname] = license
+                else:
+                    spdx_unexpected_license[fullname] = {
+                        'expected': expected_license,
+                        'found': license
+                    }
 
     for fullname in sorted(exception_reading.keys()):
         print("EXCEPTION: while reading file '%s': %s"
@@ -211,6 +231,11 @@ def walk_directory(path, config):
         for fullname in sorted(spdx_warnings.keys()):
             for msg in spdx_warnings[fullname]:
                 print("WARNING: %s: %s" % (fullname, msg))
+        for fullname in sorted(spdx_unexpected_license.keys()):
+            print("UNEXPECTED: %s: Expected license '%s' but found '%s'"
+                  "" % (fullname,
+                        spdx_unexpected_license[fullname]['expected'],
+                        spdx_unexpected_license[fullname]['found']))
     if args.verbosity >= 2:
         for fullname in sorted(spdx_good.keys()):
             print("GOOD: %s: %s" % (spdx_good[fullname], fullname))
@@ -219,16 +244,20 @@ def walk_directory(path, config):
     print("%d directories skipped out of %d directories total"
           "" % (len(skipped_directories), len(all_directories)))
     print("%d files where SPDX check was skipped because of file name suffix" % (len(spdx_ignored_suffix)))
+    for fname in filenames_without_suffix:
+        print("    ERROR file without suffix: %s" % (fname))
+    print("%d files with signature lines indicating they were auto-generated."
+          "" % (len(auto_generated_file)))
+    print("%d empty (all whitespace) files."
+          "" % (len(empty_file)))
+    print("%s files with neither errors nor warnings" % (len(spdx_good)))
+    print("")
+    print("%d files with warnings" % (len(spdx_warnings)))
+    print("%s files with unexpected licenses" % (len(spdx_unexpected_license)))
     print("%d files with errors" % (len(spdx_errors)))
     for suffix in sorted(spdx_errors_filename_suffixes.keys()):
         print("    %d error files has file name suffix '.%s'"
               "" % (spdx_errors_filename_suffixes[suffix], suffix))
-    for fname in filenames_without_suffix:
-        print("    ERROR file without suffix: %s" % (fname))
-    print("%d files with warnings" % (len(spdx_warnings)))
-    print("%d files with signature lines indicating they were auto-generated."
-          "" % (len(auto_generated_file)))
-    print("%s files with neither errors nor warnings" % (len(spdx_good)))
 
 
 rootdir = "."

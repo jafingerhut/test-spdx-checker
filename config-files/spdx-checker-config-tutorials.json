@@ -9,5 +9,80 @@
     ],
     "ignore_directories": [
 	".git"
-    ]
+    ],
+    "default_license": "Apache-2.0",
+    "other_licenses": {
+        "LICENSE": {
+	    "expected": null,
+	    "reason": "top level LICENSE file"
+	},
+        "exercises/basic/receive.py": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "imports scapy"
+	},
+        "exercises/basic/send.py": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "imports scapy"
+	},
+        "exercises/basic_tunnel/myTunnel_header.py": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "imports scapy"
+	},
+        "exercises/basic_tunnel/receive.py": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "imports scapy"
+	},
+        "exercises/basic_tunnel/send.py": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "imports scapy"
+	},
+        "exercises/calc/calc.py": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "imports scapy"
+	},
+        "exercises/ecn/receive.py": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "imports scapy"
+	},
+        "exercises/ecn/send.py": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "imports scapy"
+	},
+        "exercises/link_monitor/probe_hdrs.py": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "imports scapy"
+	},
+        "exercises/load_balance/receive.py": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "imports scapy"
+	},
+        "exercises/load_balance/send.py": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "imports scapy"
+	},
+        "exercises/mri/receive.py": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "imports scapy"
+	},
+        "exercises/mri/send.py": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "imports scapy"
+	},
+        "exercises/qos/receive.py": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "imports scapy"
+	},
+        "exercises/qos/send.py": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "imports scapy"
+	},
+        "exercises/source_routing/receive.py": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "imports scapy"
+	},
+        "exercises/source_routing/send.py": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "imports scapy"
+	}
+    }
 }
