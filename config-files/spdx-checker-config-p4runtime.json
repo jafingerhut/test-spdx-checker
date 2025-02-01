@@ -51,6 +51,10 @@
         "rust/LICENSE": {
             "expected": null,
             "reason": "LICENSE file"
+        },
+        "docs/v1/resources/fonts/verify-font": {
+            "expected": null,
+            "reason": "I do not know if this file supports comments"
         }
     }
 }

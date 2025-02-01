@@ -16,5 +16,6 @@
     "ignore_directories": [
 	".git",
 	"third_party"
-    ]
+    ],
+    "default_license": "Apache-2.0"
 }
