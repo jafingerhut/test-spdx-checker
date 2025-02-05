@@ -10,19 +10,28 @@
 	"graphml",
 	"json",
 	"md",
+	"out",
 	"png",
 	"pptx",
 	"rst",
 	"sty",
 	"supp",
 	"test",
-	"txt"
+	"txt",
+	"yang"
     ],
     "ignore_directories": [
-	".git"
+	".git",
 	"third_party"
     ],
     "ignore_paths": [
 	".github"
-    ]
+    ],
+    "default_license": "Apache-2.0",
+    "other_licenses": {
+        "LICENSE": {
+            "expected": null,
+            "reason": "top level LICENSE file"
+        }
+    }
 }

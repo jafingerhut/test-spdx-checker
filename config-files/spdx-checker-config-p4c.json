@@ -6,6 +6,7 @@
 	"bazelversion",
 	"bzl",
 	"diff",
+	"dockerignore",
 	"drawio",
 	"el",
 	"gitignore",
@@ -38,6 +39,7 @@
     ],
     "ignore_directories": [
 	".git"
-    ]
+    ],
+    "default_license": "Apache-2.0"
 }
 
