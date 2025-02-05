@@ -51,6 +51,11 @@ def suffix_after_dot(s):
         suffix = None
     return suffix
 
+def license_string(s):
+    if s is None:
+        return "(none)"
+    return s
+
 # Comment characters in various programming languages / configuration
 # file formats:
 
@@ -73,7 +78,7 @@ def spdx_line_errors_warnings(lines, expected_license, config, verbose=False):
         line = line.rstrip()
         if line != "":
             all_lines_blank = False
-        if args.verbosity >= 4:
+        if args.verbosity >= 5:
             partial_match = 'SPDX-License-Identifier' in line
         if 'SPDX-License-Identifier' in line:
             match = re.search(r"""^\s*(#|\*|//|/\*|"|;;|%)?\s*SPDX-License-Identifier:\s+(.*)$""", line)
@@ -122,6 +127,7 @@ def spdx_line_errors_warnings(lines, expected_license, config, verbose=False):
 
 
 def walk_directory(path, config):
+    exit_status = 0
     spdx_errors = {}
     spdx_errors_filename_suffixes = collections.defaultdict(int)
     filenames_without_suffix = []
@@ -130,6 +136,7 @@ def walk_directory(path, config):
     empty_file = {}
     spdx_unexpected_license = {}
     spdx_good = {}
+    spdx_good_count_by_license = collections.defaultdict(int)
     spdx_ignored_suffix = {}
     exception_reading = {}
     ignore_directories = config.get('ignore_directories', [])
@@ -174,18 +181,17 @@ def walk_directory(path, config):
                     skip_dir = True
                     break
         if skip_dir:
-            if args.verbosity >= 3:
+            if args.verbosity >= 4:
                 print("Skipping directory: %s" % (root))
             skipped_directories.append(root)
             continue
-        if args.verbosity >= 3:
+        if args.verbosity >= 4:
             print("Checking directory: %s (without rootdir %s)" % (root, dir_without_rootdir))
         for file_name in files:
             fullname = os.path.join(root, file_name)
             fullname_without_rootdir = os.path.join(dir_without_rootdir,
                                                     file_name)
             suffix = suffix_after_dot(file_name)
-            #print("Suffix: %s File: %s" % (suffix, fullname))
             if suffix in config['ignored_suffixes']:
                 spdx_ignored_suffix[fullname] = suffix
                 continue
@@ -200,7 +206,7 @@ def walk_directory(path, config):
                 expected_license = config['other_licenses'][fullname_without_rootdir]['expected']
             else:
                 expected_license = config['default_license']
-            if args.verbosity >= 3:
+            if args.verbosity >= 4:
                 print("Checking file: %s" % (fullname))
             extra_debug = False
             #if fullname_without_rootdir == "go/p4/config/v1/p4info.pb.go":
@@ -222,6 +228,7 @@ def walk_directory(path, config):
             elif not (errors or warnings):
                 if (expected_license is None) or (license == expected_license):
                     spdx_good[fullname] = license
+                    spdx_good_count_by_license[license_string(license)] += 1
                 else:
                     spdx_unexpected_license[fullname] = {
                         'expected': expected_license,
@@ -231,11 +238,12 @@ def walk_directory(path, config):
     for fullname in sorted(exception_reading.keys()):
         print("EXCEPTION: while reading file '%s': %s"
               "" % (fullname, exception_reading[fullname]))
-    if args.verbosity >= 2:
+        exit_status = 1
+    if args.verbosity >= 3:
         for fullname in sorted(spdx_ignored_suffix.keys()):
             print("IGNORED SUFFIX: %s: %s" % (spdx_ignored_suffix[fullname],
                                               fullname))
-    if args.verbosity >= 1:
+    if args.verbosity >= 2:
         for fullname in sorted(spdx_errors.keys()):
             for msg in spdx_errors[fullname]:
                 print("ERROR: %s: %s" % (fullname, msg))
@@ -247,32 +255,46 @@ def walk_directory(path, config):
                   "" % (fullname,
                         spdx_unexpected_license[fullname]['expected'],
                         spdx_unexpected_license[fullname]['found']))
-    if args.verbosity >= 2:
+    if args.verbosity >= 3:
         for fullname in sorted(spdx_good.keys()):
             print("GOOD: %s: %s" % (spdx_good[fullname], fullname))
 
-    print("%d files where exception occurred while reading its contents" % (len(exception_reading)))
-    print("%d directories skipped out of %d directories total"
-          "" % (len(skipped_directories), len(all_directories)))
-    print("%d files where SPDX check was skipped because of file name suffix" % (len(spdx_ignored_suffix)))
-    for fname in filenames_without_suffix:
-        print("    ERROR file without suffix: %s" % (fname))
-    print("%d files with signature lines indicating they were auto-generated."
-          "" % (len(auto_generated_file)))
-    print("%d empty (all whitespace) files."
-          "" % (len(empty_file)))
-    print("%s files with neither errors nor warnings" % (len(spdx_good)))
-    print("")
-    print("%d files with warnings" % (len(spdx_warnings)))
-    print("%s files with unexpected licenses" % (len(spdx_unexpected_license)))
-    print("%d files with errors" % (len(spdx_errors)))
-    for suffix in sorted(spdx_errors_filename_suffixes.keys()):
-        print("    %d error files has file name suffix '.%s'"
-              "" % (spdx_errors_filename_suffixes[suffix], suffix))
+    if args.verbosity >= 1:
+        print("%d files where exception occurred while reading its contents" % (len(exception_reading)))
+        print("%d directories skipped out of %d directories total"
+              "" % (len(skipped_directories), len(all_directories)))
+        print("%d files where SPDX check was skipped because of file name suffix" % (len(spdx_ignored_suffix)))
+    if args.verbosity >= 3:
+        for fname in filenames_without_suffix:
+            print("    NOTE file without suffix: %s" % (fname))
+    if args.verbosity >= 1:
+        print("%d files with signature lines indicating they were auto-generated."
+              "" % (len(auto_generated_file)))
+        print("%d empty (all whitespace) files."
+              "" % (len(empty_file)))
+        print("%s files with neither errors nor warnings" % (len(spdx_good)))
+        if args.verbosity >= 2:
+            for license in sorted(spdx_good_count_by_license.keys()):
+                print("    %d with license: %s"
+                      "" % (spdx_good_count_by_license[license],
+                            license))
+        print("")
+        print("%d files with warnings" % (len(spdx_warnings)))
+        print("%s files with unexpected licenses" % (len(spdx_unexpected_license)))
+        print("%d files with errors" % (len(spdx_errors)))
+        for suffix in sorted(spdx_errors_filename_suffixes.keys()):
+            print("    %d error files has file name suffix '.%s'"
+                  "" % (spdx_errors_filename_suffixes[suffix], suffix))
+    if len(spdx_unexpected_license) != 0 or len(spdx_errors) != 0:
+        exit_status = 1
+    return exit_status
 
 
 rootdir = "."
 if args.rootdir:
     rootdir = args.rootdir
 
-walk_directory(rootdir, config)
+exit_status = walk_directory(rootdir, config)
+#if args.verbosity >= 1:
+#    print("dbg exit_status=%d" % (exit_status))
+sys.exit(exit_status)
