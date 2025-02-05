@@ -1,0 +1,32 @@
+{
+    "ignored_suffixes": [
+	"bazel",
+	"bazelrc",
+	"bazelversion",
+	"bzl",
+	"expected",
+	"gitignore",
+	"md",
+	"output",
+	"pdf",
+	"txt"
+    ],
+    "ignore_paths": [
+	".github"
+    ],
+    "ignore_directories": [
+	".git"
+    ],
+    "default_license": "Apache-2.0",
+    "other_licenses": {
+        "LICENSE": {
+	    "expected": null,
+	    "reason": "top level LICENSE file"
+	},
+        "AUTHORS": {
+	    "expected": null,
+	    "reason": "authors file"
+	}
+    }
+}
+
