@@ -10,10 +10,12 @@
 	"txt",
 	"xml"
     ],
+    "ignore_directories": [
+	".git",
+	"third-party"
+    ],
     "ignore_paths": [
 	".github"
     ],
-    "ignore_directories": [
-	".git"
-    ]
+    "default_license": "Apache-2.0"
 }

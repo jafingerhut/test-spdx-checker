@@ -1,0 +1,22 @@
+{
+    "ignored_suffixes": [
+	"gitignore",
+	"gitmodules",
+	"md",
+	"txt"
+    ],
+    "ignore_directories": [
+	".git",
+	"third-party"
+    ],
+    "ignore_paths": [
+	".github"
+    ],
+    "default_license": "Apache-2.0",
+    "other_licenses": {
+        "LICENSE": {
+            "expected": null,
+            "reason": "top level LICENSE file"
+        }
+    }
+}
