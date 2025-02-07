@@ -1,0 +1,30 @@
+{
+    "ignored_suffixes": [
+	"gitignore",
+	"md",
+	"mod",
+	"sum"
+    ],
+    "ignore_directories": [
+	".git"
+    ],
+    "default_license": "Apache-2.0",
+    "other_licenses": {
+        "LICENSE": {
+	    "expected": null,
+	    "reason": "top level LICENSE file"
+	},
+        "code/include/bits.bpf.h": {
+	    "expected": "BSD-2-Clause",
+	    "reason": "I am not sure why this is BSD-2-Clause."
+	},
+        "code/include/tcp_int_common.bpf.h": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "EBPF C source file meant to be compiled and executable loaded into the Linux kernel"
+	},
+        "code/src/bpf/tcp_int.bpf.c": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "EBPF C source file meant to be compiled and executable loaded into the Linux kernel"
+	}
+    }
+}
