@@ -83,8 +83,14 @@ def spdx_line_errors_warnings(lines, expected_license, config, verbose=False):
         if 'SPDX-License-Identifier' in line:
             match = re.search(r"""^\s*(#|\*|//|/\*|"|;;|%)?\s*SPDX-License-Identifier:\s+(.*)$""", line)
             if match:
-                license_id_lines.append(line)
                 license = match.group(2)
+                # In C/C++/Java files, there might be "*/" at the end
+                # of the line.  If so, remove it from the license
+                # found.
+                match = re.search(r"""^(.*?)\s*\*\/\s*$""", license)
+                if match:
+                    license = match.group(1)
+                license_id_lines.append(line)
             else:
                 malformed_id_lines.append(line)
         if verbose:
