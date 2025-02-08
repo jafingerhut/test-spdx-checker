@@ -147,6 +147,7 @@ def walk_directory(path, config):
     exception_reading = {}
     ignore_directories = config.get('ignore_directories', [])
     ignore_paths = config.get('ignore_paths', [])
+    ignore_files = config.get('ignore_files', {})
     all_directories = []
     skipped_directories = []
     for root, dirs, files in os.walk(path):
@@ -197,6 +198,9 @@ def walk_directory(path, config):
             fullname = os.path.join(root, file_name)
             fullname_without_rootdir = os.path.join(dir_without_rootdir,
                                                     file_name)
+            if fullname_without_rootdir in ignore_files:
+                print("dbg ignore_file: %s" % (fullname_without_rootdir))
+                continue
             suffix = suffix_after_dot(file_name)
             if suffix in config['ignored_suffixes']:
                 spdx_ignored_suffix[fullname] = suffix
