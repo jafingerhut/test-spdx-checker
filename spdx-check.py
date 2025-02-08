@@ -139,6 +139,7 @@ def walk_directory(path, config):
     filenames_without_suffix = []
     spdx_warnings = {}
     auto_generated_file = {}
+    symbolic_links = {}
     empty_file = {}
     spdx_unexpected_license = {}
     spdx_good = {}
@@ -196,10 +197,18 @@ def walk_directory(path, config):
             print("Checking directory: %s (without rootdir %s)" % (root, dir_without_rootdir))
         for file_name in files:
             fullname = os.path.join(root, file_name)
+            if os.path.islink(fullname):
+                # Ignore symbolic links.  If they point at no file at
+                # all, then it would fail to read their contents.  If
+                # they do point at a file in the directory tree, then
+                # we will find them and read them by their
+                # non-symbolic-link path name elsewhere in the file
+                # scan.
+                symbolic_links[fullname] = True
+                continue
             fullname_without_rootdir = os.path.join(dir_without_rootdir,
                                                     file_name)
             if fullname_without_rootdir in ignore_files:
-                print("dbg ignore_file: %s" % (fullname_without_rootdir))
                 continue
             suffix = suffix_after_dot(file_name)
             if suffix in config['ignored_suffixes']:
@@ -280,6 +289,8 @@ def walk_directory(path, config):
     if args.verbosity >= 1:
         print("%d files with signature lines indicating they were auto-generated."
               "" % (len(auto_generated_file)))
+        print("%d symbolic links (contents ignored)."
+              "" % (len(symbolic_links)))
         print("%d empty (all whitespace) files."
               "" % (len(empty_file)))
         print("%s files with neither errors nor warnings" % (len(spdx_good)))
