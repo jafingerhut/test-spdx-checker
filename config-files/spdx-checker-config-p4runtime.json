@@ -34,27 +34,14 @@
     "ignore_directories": [
         ".git"
     ],
-    "default_license": "Apache-2.0",
-    "other_licenses": {
-        "LICENSE": {
-            "expected": null,
-            "reason": "top level LICENSE file"
-        },
-        "py/LICENSE": {
-            "expected": null,
-            "reason": "LICENSE file"
-        },
-        "proto/LICENSE": {
-            "expected": null,
-            "reason": "LICENSE file"
-        },
-        "rust/LICENSE": {
-            "expected": null,
-            "reason": "LICENSE file"
-        },
+    "ignore_files": {
+        "LICENSE": { "reason": "top level LICENSE file" },
+        "py/LICENSE": { "reason": "LICENSE file" },
+        "proto/LICENSE": { "reason": "LICENSE file" },
+        "rust/LICENSE": { "reason": "LICENSE file" },
         "docs/v1/resources/fonts/verify-font": {
-            "expected": null,
             "reason": "I do not know if this file supports comments"
         }
-    }
+    },
+    "default_license": "Apache-2.0"
 }

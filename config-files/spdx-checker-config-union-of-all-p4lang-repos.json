@@ -71,5 +71,9 @@
 	".github",
 	"third_party",
 	"third-party"
-    ]
+    ],
+    "ignore_paths": [
+	"forks"
+    ],
+    "default_license": "Apache-2.0"
 }

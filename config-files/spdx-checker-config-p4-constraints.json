@@ -17,16 +17,10 @@
     "ignore_directories": [
 	".git"
     ],
-    "default_license": "Apache-2.0",
-    "other_licenses": {
-        "LICENSE": {
-	    "expected": null,
-	    "reason": "top level LICENSE file"
-	},
-        "AUTHORS": {
-	    "expected": null,
-	    "reason": "authors file"
-	}
-    }
+    "ignore_files": {
+        "LICENSE": { "reason": "top level LICENSE file" },
+        "AUTHORS": { "reason": "authors file" }
+    },
+    "default_license": "Apache-2.0"
 }
 

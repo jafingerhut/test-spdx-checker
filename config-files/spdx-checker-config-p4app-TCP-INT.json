@@ -8,12 +8,11 @@
     "ignore_directories": [
 	".git"
     ],
+    "ignore_files": {
+        "LICENSE": { "reason": "top level LICENSE file" }
+    },
     "default_license": "Apache-2.0",
     "other_licenses": {
-        "LICENSE": {
-	    "expected": null,
-	    "reason": "top level LICENSE file"
-	},
         "code/include/bits.bpf.h": {
 	    "expected": "BSD-2-Clause",
 	    "reason": "I am not sure why this is BSD-2-Clause."
