@@ -2,7 +2,6 @@
     "ignored_suffixes": [
 	"bazelrc",
 	"bazelversion",
-	"bzl",
 	"cfg",
 	"dockerignore",
 	"gitignore",

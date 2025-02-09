@@ -10,7 +10,6 @@
 	"bazelversion",
 	"bib",
 	"bin",
-	"bzl",
 	"bzlmod",
 	"cfg",
 	"conf",
@@ -28,7 +27,6 @@
 	"graphml",
 	"gz",
 	"htm",
-	"html",
 	"ico",
 	"jar",
 	"jpg",
@@ -54,7 +52,6 @@
 	"sum",
 	"svg",
 	"tex",
-	"toml",
 	"ttf",
 	"txt",
 	"TXT",
@@ -62,8 +59,6 @@
 	"whl",
 	"woff",
 	"woff2",
-	"xml",
-	"yml",
 	"zip"
     ],
     "ignore_directories": [

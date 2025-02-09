@@ -6,7 +6,6 @@
 	"flake8",
 	"gitignore",
 	"md",
-	"toml",
 	"txt"
     ],
     "ignore_paths": [

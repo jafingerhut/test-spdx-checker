@@ -7,8 +7,7 @@
 	"json",
 	"md",
 	"patch",
-	"txt",
-	"xml"
+	"txt"
     ],
     "ignore_directories": [
 	".git",
