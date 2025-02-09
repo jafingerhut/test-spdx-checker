@@ -1,0 +1,19 @@
+{
+    "ignored_suffixes": [
+	"cfg",
+	"diff",
+	"dockerignore",
+	"gitignore",
+	"json",
+	"md",
+	"patch",
+	"txt"
+    ],
+    "ignore_paths": [
+	".github"
+    ],
+    "ignore_directories": [
+	".git"
+    ],
+    "default_license": "Apache-2.0"
+}
