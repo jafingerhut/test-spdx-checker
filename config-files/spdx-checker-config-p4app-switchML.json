@@ -8,9 +8,7 @@
 	"png",
 	"rst",
 	"txt",
-	"yapf",
-	"yaml",
-	"yml"
+	"yapf"
     ],
     "ignore_directories": [
 	".git",

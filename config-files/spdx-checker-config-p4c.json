@@ -4,13 +4,10 @@
 	"bazelignore",
 	"bazelrc",
 	"bazelversion",
-	"bzl",
 	"diff",
 	"dockerignore",
 	"drawio",
-	"el",
 	"gitignore",
-	"html",
 	"json",
 	"md",
 	"patch",
@@ -20,9 +17,7 @@
 	"pptx",
 	"svg",
 	"tex",
-	"toml",
-	"txt",
-	"xml"
+	"txt"
     ],
     "ignore_paths": [
 	".github",
