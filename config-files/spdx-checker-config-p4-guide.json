@@ -1,0 +1,31 @@
+{
+    "ignored_suffixes": [
+	"bin",
+	"conf",
+	"diff",
+	"dot",
+	"graffle",
+	"jpg",
+	"json",
+	"md",
+	"mdk",
+	"mod",
+	"odt",
+	"p4i",
+	"patch",
+	"pcap",
+	"pdf",
+	"png",
+	"pptx",
+	"spec",
+	"sum",
+	"svg",
+	"txt",
+	"txtpb"
+    ],
+    "ignore_directories": [
+	".git"
+    ],
+    "default_license": "Apache-2.0"
+}
+
