@@ -31,11 +31,17 @@ if args.configfile:
     with open(args.configfile, 'r') as f:
         contents = f.read()
     config = json.loads(contents)
+else:
+    print("Must provide '--config-file <filename>' command line argument.")
+    sys.exit(1)
 
 config['ignored_suffixes'] = set(config.get('ignored_suffixes', []))
 config['other_licenses'] = config.get('other_licenses', {})
 
 if 'default_license' not in config:
+    print("top level keys found in config file:")
+    for k in sorted(config.keys()):
+        print("    %s" % (k))
     print("config file must define a key 'default_license' with a string value.",
           file=sys.stderr)
     sys.exit(1)
