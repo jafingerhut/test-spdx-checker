@@ -8,10 +8,8 @@ import collections
 import json
 import os
 import re
+import subprocess
 import sys
-
-# TODO: This value should be read from the config file
-default_license = 'Apache-2.0'
 
 parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -23,6 +21,8 @@ license ids.
 """)
 parser.add_argument('--root-dir', dest='rootdir', type=str)
 parser.add_argument('--config-file', dest='configfile', type=str)
+parser.add_argument('--addlicense-file', dest='addlicense_file', type=str)
+parser.add_argument('--addlicense-author', dest='addlicense_author', type=str)
 parser.add_argument('--verbosity', dest='verbosity', type=int, default=0)
 args, remaining_args = parser.parse_known_args()
 
@@ -120,12 +120,8 @@ def spdx_line_errors_warnings(lines, expected_license, config, verbose=False):
                "" % (len(license_id_lines)))
         errors.append(msg)
     elif len(license_id_lines) == 0:
-        if expected_license is None:
-            # Then it is expected not to find a license id line
-            pass
-        else:
-            msg = "Found no SPDX-License-Identifier line"
-            errors.append(msg)
+        msg = "Found no SPDX-License-Identifier line"
+        errors.append(msg)
     if len(malformed_id_lines) != 0:
         msg = ("Found %d lines with SPDX-License-Identifier but incorrect syntax"
                "" % (len(malformed_id_lines)))
@@ -136,6 +132,48 @@ def spdx_line_errors_warnings(lines, expected_license, config, verbose=False):
     if errors:
         license = None
     return errors, warnings, all_lines_blank, generated_file, license
+
+
+# Determine the author name and year that the file was first
+# committed, via 'git log <filename>', and finding the last
+# (i.e. oldest) commit, which should be the one that added the file.
+
+def get_file_first_commit_info(fullname):
+    cmd = ['git', 'log', fullname]
+    got_exception = False
+    try:
+        completed = subprocess.run(cmd, capture_output=True,
+                                   encoding='utf-8')
+        prev_line_was_author = False
+        num_commits = 0
+        author = None
+        year_str = None
+        for line in completed.stdout.splitlines():
+            if prev_line_was_author:
+                match = re.search(r"""^Date:\s*(.*)\s*$""", line)
+                if match:
+                    prev_line_was_author = False
+                    fulldate = match.group(1)
+                    # Example date output from git log:
+                    # Sun Jan 26 17:28:18 2025 -0500
+                    match = re.search(r"""^\S+\s+\S+\s+\S+\s+\S+\s+(\d+)\s+\S+\s*$""", fulldate)
+                    if match:
+                        year_str = match.group(1)
+            match = re.search(r"""^Author:\s*(.*)\s*$""", line)
+            if match:
+                author = match.group(1)
+                num_commits += 1
+                prev_line_was_author = True
+                # Remove email address in angle brackets, if present
+                match = re.search(r"""^(.*?)\s*<.*>\s*$""", author)
+                if match:
+                    author = match.group(1)
+            else:
+                prev_line_was_author = False
+    except Exception as e:
+        got_exception = True
+        print("dbg e=%s" % (e))
+    return got_exception, num_commits, author, year_str
 
 
 def walk_directory(path, config):
@@ -251,7 +289,7 @@ def walk_directory(path, config):
             elif generated_file:
                 auto_generated_file[fullname] = True
             elif not (errors or warnings):
-                if (expected_license is None) or (license == expected_license):
+                if license == expected_license:
                     spdx_good[fullname] = license
                     spdx_good_count_by_license[license_string(license)] += 1
                 else:
@@ -312,6 +350,36 @@ def walk_directory(path, config):
         for suffix in sorted(spdx_errors_filename_suffixes.keys()):
             print("    %d error files has file name suffix '.%s'"
                   "" % (spdx_errors_filename_suffixes[suffix], suffix))
+    if args.addlicense_file:
+        addlicense_script_lines = []
+        for fullname in sorted(spdx_errors.keys()):
+            got_exception, num_commits, author, year_str = get_file_first_commit_info(fullname)
+            # If the user specified the --addlicense-author option,
+            # use the author specified there instead of what was found
+            # in the commit log.
+            if args.addlicense_author:
+                author = args.addlicense_author
+            if got_exception:
+                msg = ("# got exception trying to get git log of file: %s"
+                       "" % (fullname))
+                addlicense_script_lines.append(msg)
+            else:
+                msg = ("# %d commits found for file: %s"
+                       "" % (num_commits, fullname))
+                addlicense_script_lines.append(msg)
+                if author is None or year_str is None:
+                    msg = ("# author=%s year_str=%s at least one is None, so no addlicense command"
+                           "" % (author, year_str))
+                    addlicense_script_lines.append(msg)
+                else:
+                    msg = ("addlicense -c '%s' -l apache -s -y %s '%s'"
+                           "" % (author, year_str, fullname))
+                    addlicense_script_lines.append(msg)
+        with open(args.addlicense_file, 'w') as f:
+            print("#! /bin/bash", file=f)
+            print("", file=f)
+            for line in addlicense_script_lines:
+                print(line, file=f)
     if len(spdx_unexpected_license) != 0 or len(spdx_errors) != 0:
         exit_status = 1
     return exit_status
