@@ -19,11 +19,35 @@ recursively all of its subdirectories, checking that they have
 SPDX-License-Identifier comment lines with the expected software
 license ids.
 """)
-parser.add_argument('--root-dir', dest='rootdir', type=str)
-parser.add_argument('--config-file', dest='configfile', type=str)
-parser.add_argument('--addlicense-file', dest='addlicense_file', type=str)
-parser.add_argument('--addlicense-author', dest='addlicense_author', type=str)
-parser.add_argument('--verbosity', dest='verbosity', type=int, default=0)
+parser.add_argument('--root-dir', dest='rootdir', type=str, default=".",
+                    help="""The root directory, starting at which
+                    this program will make a recursive traversal of
+                    all files in all of its subdirectories.""")
+parser.add_argument('--config-file', dest='configfile', type=str,
+                    help="""The name of a configuration file, in JSON
+                    format, that can containg many additional options
+                    for which directories or files to skip checking,
+                    and what licene should be found in files that are
+                    checked.""")
+parser.add_argument('--addlicense-file', dest='addlicense_file', type=str,
+                    help="""A file name to write with a Bash script,
+                    that runs the command `addlicense` once for each
+                    file that is missing an SPDX license.  This script
+                    can be run to quickly add the desired license
+                    notice to many files.""")
+parser.add_argument('--addlicense-author', dest='addlicense_author', type=str,
+                    help="""The author to use in the `addlicense`
+                    commands created by the --addlicense-file option,
+                    instead of the first author in the git commit log
+                    for the file.""")
+parser.add_argument('--verbosity', dest='verbosity', type=int, default=0,
+                    help="""Verbosity 0 shows no output, only
+                    returning a 0 exit status if all files checked
+                    have the desired SPDX license id, non-0 if
+                    problems were encountered.  Verbosity 1 and 2 are
+                    good for showing more details about statistics of
+                    number of directories and files found of various
+                    kinds, and any SPDX license id problems found.""")
 args, remaining_args = parser.parse_known_args()
 
 config = {}
@@ -71,6 +95,7 @@ def license_string(s):
 # " - Vim configuration file
 # ;; - Emacs Elisp
 # % - LaTeX source file
+# dnl - some GNU Automake files https://www.gnu.org/software/automake/manual/1.7.9/automake.html
 
 def spdx_line_errors_warnings(lines, expected_license, config, verbose=False):
     license_id_lines = []
@@ -87,7 +112,7 @@ def spdx_line_errors_warnings(lines, expected_license, config, verbose=False):
         if args.verbosity >= 5:
             partial_match = 'SPDX-License-Identifier' in line
         if 'SPDX-License-Identifier' in line:
-            match = re.search(r"""^\s*(#|\*|//|/\*|"|;;|%)?\s*SPDX-License-Identifier:\s+(.*)$""", line)
+            match = re.search(r"""^\s*(#|\*|//|/\*|"|;;|%|dnl)?\s*SPDX-License-Identifier:\s+(.*)$""", line)
             if match:
                 license = match.group(2)
                 # In C/C++/Java files, there might be "*/" at the end
