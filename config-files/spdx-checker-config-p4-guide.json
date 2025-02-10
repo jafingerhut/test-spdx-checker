@@ -5,6 +5,7 @@
 	"diff",
 	"dot",
 	"graffle",
+	"gz",
 	"jpg",
 	"json",
 	"md",
@@ -21,7 +22,11 @@
 	"sum",
 	"svg",
 	"txt",
-	"txtpb"
+	"txtpb",
+	"zip"
+    ],
+    "ignore_paths": [
+	"vscode-preproc-highlighting/sonic-pins"
     ],
     "ignore_directories": [
 	".git"
