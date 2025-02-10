@@ -3,6 +3,7 @@
 	"bazel",
 	"bazelrc",
 	"bazelversion",
+	"bzl",
 	"expected",
 	"gitignore",
 	"md",

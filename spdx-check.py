@@ -377,6 +377,7 @@ def walk_directory(path, config):
                   "" % (spdx_errors_filename_suffixes[suffix], suffix))
     if args.addlicense_file:
         addlicense_script_lines = []
+        num_addlicense_cmds = 0
         for fullname in sorted(spdx_errors.keys()):
             got_exception, num_commits, author, year_str = get_file_first_commit_info(fullname)
             # If the user specified the --addlicense-author option,
@@ -400,11 +401,15 @@ def walk_directory(path, config):
                     msg = ("addlicense -c '%s' -l apache -s -y %s '%s'"
                            "" % (author, year_str, fullname))
                     addlicense_script_lines.append(msg)
+                    num_addlicense_cmds += 1
         with open(args.addlicense_file, 'w') as f:
             print("#! /bin/bash", file=f)
             print("", file=f)
             for line in addlicense_script_lines:
                 print(line, file=f)
+        if args.verbosity >= 1:
+            print("Wrote bash script with %d addlicense commands: %s"
+                  "" % (num_addlicense_cmds, args.addlicense_file))
     if len(spdx_unexpected_license) != 0 or len(spdx_errors) != 0:
         exit_status = 1
     return exit_status
