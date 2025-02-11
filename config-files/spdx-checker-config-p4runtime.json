@@ -30,6 +30,9 @@
     "ignore_directories": [
         ".git"
     ],
+    "ignore_paths": [
+	".github"
+    ],
     "ignore_files": {
         "LICENSE": { "reason": "top level LICENSE file" },
         "py/LICENSE": { "reason": "LICENSE file" },
@@ -39,5 +42,11 @@
             "reason": "I do not know if this file supports comments"
         }
     },
-    "default_license": "Apache-2.0"
+    "default_license": "Apache-2.0",
+    "other_licenses": {
+        "docs/v1/resources/theme/p4-stylesheet.css": {
+	    "expected": "MIT",
+	    "reason": "CSS file copied from elsewhere with MIT license"
+	}
+    }
 }
