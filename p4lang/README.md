@@ -19,16 +19,42 @@ that were compiled from those Apache 2.0 licensed source files
 design).
 
 
+## Recommendations for Copyright notice author
+
+Suppose a file has multiple authors.  Is it acceptable if the
+copyright line in the source file says:
+
+```
+// Copyright 2025 The P4 Consortium
+```
+
+and then have a top level file CONTRIBUTING in the repository that
+lists individual contributors?
+
+
+## Recommendations for Copyright notice year
+
+Is it acceptable for a year in a copyright notice to be
+`2013-present`?
+
+If a source file was originally added in 2024, then modified in 2025,
+is it acceptable to leave the year as `2024`?  Or should it be changed
+to `2024-2025`?
+
+Should that extend to things like `2024-2025, 2027, 2030` if the file
+is modified only in years 2025, 2027, and 2030?
+
+
 ## Is it acceptable for a repository to have a mix of some files with one license, and other files with other licenses?
 
 We very much hope the answer is yes.
 
 For example, we expect we will need to have a very small number of
 source files in this repository https://github.com/p4lang/p4c be
-licensed under GPL-2.0-only, because of one of two reasons:
+licensed under GPL-2.0-only, because of one of these reasons:
 
-+ They are test programs written in Python that import the GPL v2
-  Scapy library.
++ They are test programs written in Python that import the
+  GPL-2.0-only Scapy module.
 + They are C source files that are expected to be compiled, loaded
   into the Linux kernel via EBPF, and executed.
 
@@ -95,6 +121,28 @@ Releasing `ptf` under the BSD-3-Clause license would allow this.
 Note: There are other choices of license besides BSD-3-Clause for
 `ptf` that support both Example 2 and Example 3, but note that
 Apache-2.0 is _not_ one of them.
+
+
+### Important exceptions: LGPL and GCC runtime libraries
+
+We frequently make use of header files and dymamic linking to shared
+libraries released under the LGPL-2.1 license, and include header
+files released with the "GCC Runtime Library Exception", e.g. Linux
+header files that have this text in their comments:
+
+```
+Under Section 7 of GPL version 3, you are granted additional
+permissions described in the GCC Runtime Library Exception, version
+3.1, as published by the Free Software Foundation.
+```
+
+Those wishing to release executable binaries without being required to
+release source code should avoid statically linking to libraries
+released under the LGPL, by only dynamically linking to them.
+Alternately, they can statically link with other compatible libraries
+that provide similar functionality, e.g. `musl libc`.
+
++ https://www.musl-libc.org/
 
 
 ### EBPF program laoded into Linux kernel
