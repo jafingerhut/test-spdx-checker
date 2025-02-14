@@ -67,7 +67,7 @@ is acceptable to release program A under license X for the following
 combinations of licenses X, Y:
 
 
-|            | license Y |
+|            | license Y |||
 | license X  | Apache-2.0 | BSD-3-Clause, BSD-2-Clause, MIT, FSFAP | GPL-2.0-only |
 | ---------- | ---------- | -------------------------------------- | ------------ |
 | Apache-2.0 | yes (same) | yes (compatible)                       | no (legally questionable) |
