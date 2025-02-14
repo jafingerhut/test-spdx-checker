@@ -21,12 +21,26 @@ design).
 
 ## Is it acceptable for a repository to have a mix of some files with one license, and other files with other licenses?
 
-We hope the answer is yes.
+We very much hope the answer is yes.
+
+For example, we expect we will need to have a very small number of
+source files in this repository https://github.com/p4lang/p4c be
+licensed under GPL-2.0-only, because of one of two reasons:
+
++ They are test programs written in Python that import the GPL v2
+  Scapy library.
++ They are C source files that are expected to be compiled, loaded
+  into the Linux kernel via EBPF, and executed.
+
+We expect 99% or so of the source files in that repository to be
+licensed under the Apache-2.0 license.
 
 
-## If so, what should the top level LICENSE file contain?
+## If yes, what should the top level LICENSE file contain?
 
-Is a file like this one acceptable?
+Is a file like this one acceptable, which mentions all licenses used
+by any file in the repository, and a way to distinguish which source
+files use which license?
 
 + https://github.com/p4lang/p4app-TCP-INT/blob/main/LICENSE
 
@@ -37,42 +51,51 @@ Is a file like this one acceptable?
 ## What are recommended rules for mixing different license files?
 
 From our limited research, it appears that it is very legally
-questionable whether mixing GPL v2 and Apache 2.0 files in the same
-executable program is allowed.
+questionable whether mixing GPL-2.0-only and Apache-2.0 files in the
+same executable program is allowed.
 
 + https://github.com/p4lang/p4c/pull/5110/files#diff-f137a4759c2186ea8e241cf59e0610f4f0d03f343b48b0bb68d0e79f9797e019
 
 Our tentative conclusion: Do not mix such licenses.
 
-We believe it is acceptable for a GPLv2 program to include a
-BSD-3-Clause library/header file.
+We believe "Program A released under license X" being combined with the code of "Program/library B released under license Y" in any of these ways:
 
-Rules we hope to follow are described in the following subsections.
++ C/C++ include, static linking, or dynamic linking
++ Python import
+
+is acceptable to release program A under license X for the following
+combinations of licenses X, Y:
 
 
-### One of our programs includes a GPL-2.0-only library
+|            | license Y |
+| license X  | Apache-2.0 | BSD-3-Clause, BSD-2-Clause, MIT, FSFAP | GPL-2.0-only |
+| ---------- | ---------- | -------------------------------------- | ------------ |
+| Apache-2.0 | yes (same) | yes (compatible)                       | no (legally questionable) |
+| BSD-3-Clause, BSD-2-Clause, MIT, FSFAP | yes (compatible) | yes (compatible) | no (program A must be released as GPL-2.0-only)
+| GPL-2.0-only | no (legally questionable) | yes (compatible)      | yes (same) |
 
-If A includes B, and B is GPL-2.0-only (chosen by someone else),
-release A as GPL-2.0-only.
-
-Example: Several test Python programs in the
+Example 1: Several test Python programs in the
 https://github.com/p4lang/p4c repository import the Scapy library,
 released as GPL-2.0-only.  We will make these test Python programs
 GPL-2.0-only.
 
-+ https://github.com/p4lang/p4c/pull/5111
+Example 2: We want to support the ability of a Python test program A
+to import the Scapy library (see Example 1), and also import the
+Python `ptf` module in https://github.com/p4lang/ptf
 
+Because of Example 1, A should be licensed as GPL-2.0-only.  Releasing
+`ptf` under the BSD-3-Clause license would allow this.
 
-### One of our programs includes a GPL-2.0-only library, and also one of our libraries
+Example 3: We also want to support the ability of a Python test
+program B that does _not_ import the Scapy library to import `ptf`,
+and to release B under an Apache-2.0 or BSD-3-Clause license
+(developer's choice).
 
-If A includes both B and C, and B is GPL-2.0-only (chosen by someone
-else), release A as GPL-2.0-only, and C as BSD-3-Clause.  This allows
-another program D to include C, with D released as Apache-2.0.
+Releasing `ptf` under the BSD-3-Clause license would allow this.
 
-Example: A few Python test programs in p4lang repositories import
-Scapy, and also a p4lang library https://github.com/p4lang/ptf We will
-make those test Python programs GPL-2.0-only, and the ptf package
-BSD-3-Clause.
+Note: There are other choices of license besides BSD-3-Clause for
+`ptf` that support both Example 2 and Example 3, but note that
+Apache-2.0 is _not_ one of them.
 
 
 ### EBPF program laoded into Linux kernel
