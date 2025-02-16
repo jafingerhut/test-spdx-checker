@@ -93,10 +93,10 @@ is acceptable to release program A under license X for the following
 combinations of licenses X, Y:
 
 
-| license X  | license Y is Apache-2.0 | license Y is BSD-3-Clause, BSD-2-Clause, MIT, FSFAP | license Y is GPL-2.0-only |
+| license X  | license Y is Apache-2.0 | license Y is BSD-3-Clause, BSD-2-Clause, MIT, FSFAP, BSL-1.0 | license Y is GPL-2.0-only |
 | ---------- | ---------- | -------------------------------------- | ------------ |
 | Apache-2.0 | yes (same) | yes (compatible)                       | no (legally questionable) |
-| BSD-3-Clause, BSD-2-Clause, MIT, FSFAP | yes (compatible) | yes (compatible) | no (program A must be released as GPL-2.0-only)
+| BSD-3-Clause, BSD-2-Clause, MIT, FSFAP, BSL-1.0 | yes (compatible) | yes (compatible) | no (program A must be released as GPL-2.0-only) |
 | GPL-2.0-only | no (legally questionable) | yes (compatible)      | yes (same) |
 
 Example 1: Several test Python programs in the
