@@ -61,6 +61,21 @@ licensed under GPL-2.0-only, because of one of these reasons:
 We expect 99% or so of the source files in that repository to be
 licensed under the Apache-2.0 license.
 
+Responses from [1]:
+
++ It may be acceptable, but not recommended unless all licenses are
+  compatible.  For example, if you have some GPL licensed files and
+  the rest of the repo is under Apache, there is a higher risk for a
+  license conflict by your team or by a downstream user.  I recommend
+  that you put the GPL files in a separate repo if possible, or at
+  least put them in a separate directory, and then clearly make note
+  if this in both the LICENSE and README files.
++ Also, you must be sure that the GPL files are not combined in any
+  way with the rest of your project code.  If they are completely
+  stand-alone executables they should be OK (or mixed with other GPL
+  code as you describe), otherwise they will contaminate your
+  codebase.
+
 
 ## If yes, what should the top level LICENSE file contain?
 
@@ -69,6 +84,12 @@ by any file in the repository, and a way to distinguish which source
 files use which license?
 
 + https://github.com/p4lang/p4app-TCP-INT/blob/main/LICENSE
+
+Response from [1]:
+
++ The top level repo license you have is OK.  I also recommend that
+  you have a NOTICE.md file with license info for any files which are
+  not authored by your project.
 
 
 ## Anything else we should do for such mixed-license repositories?
@@ -84,7 +105,17 @@ same executable program is allowed.
 
 Our tentative conclusion: Do not mix such licenses.
 
-We believe "Program A released under license X" being combined with the code of "Program/library B released under license Y" in any of these ways:
+Response from [1]:
+
++ Most experts consider these 2 licenses [Apache-2.0 and GPL-2.0-only]
+  to be incompatible.  At best all code will need to be released under
+  GPL2 and more likely it causes a direct license conflict and is not
+  allowed.
+
+
+We believe "Program A released under license X" being combined with
+the code of "Program/library B released under license Y" in any of
+these ways:
 
 + C/C++ include, static linking, or dynamic linking
 + Python import
@@ -99,10 +130,13 @@ combinations of licenses X, Y:
 | BSD-3-Clause, BSD-2-Clause, MIT, FSFAP, BSL-1.0 | yes (compatible) | yes (compatible) | no (program A must be released as GPL-2.0-only) |
 | GPL-2.0-only | no (legally questionable) | yes (compatible)      | yes (same) |
 
-Example 1: Several test Python programs in the
+Example 1: Several standalone test Python programs in the
 https://github.com/p4lang/p4c repository import the Scapy library,
 released as GPL-2.0-only.  We will make these test Python programs
-GPL-2.0-only.
+GPL-2.0-only.  There are only six of these files as of 2025-Feb-28 in
+that repository.  There are more such Python test programs in other
+https://github.com/p4lang repositories that are for educational
+purposes, so not as critical as the p4c repo.
 
 Example 2: We want to support the ability of a Python test program A
 to import the Scapy library (see Example 1), and also import the
@@ -120,7 +154,13 @@ Releasing `ptf` under the BSD-3-Clause license would allow this.
 
 Note: There are other choices of license besides BSD-3-Clause for
 `ptf` that support both Example 2 and Example 3, but note that
-Apache-2.0 is _not_ one of them.
+Apache-2.0 is _not_ one of them.  Another example would be to release
+`ptf` under a dual license of Apache-2.0 or GPL-2.0-only, at the
+user's choice.
+
+Question for P4 Consortium engineers: Are there _other_ Python
+modules, currently released under Apache-2.0, that are similar to
+`ptf` as described above?  It seems likely that there are.
 
 
 ### Important exceptions: LGPL and GCC runtime libraries
@@ -157,3 +197,9 @@ These should be GPL-2.0-only or BSD-3-Clause.
 We plan to make them BSD-3-Clause if they are included from EBPF
 programs, and also from user-space programs that will interact with
 the in-kernel EBPF programs.
+
+
+# References
+
+[1] 2025-Feb-23 email from Jeff Shapiro, a license specialist at the
+    Linux Fopundation, but not an intellectual property lawyer.
