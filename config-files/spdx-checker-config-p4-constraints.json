@@ -1,11 +1,14 @@
 {
     "ignored_suffixes": [
-	"cfg",
-	"coveragerc",
-	"dockerignore",
-	"flake8",
+	"bazel",
+	"bazelrc",
+	"bazelversion",
+	"bzl",
+	"expected",
 	"gitignore",
 	"md",
+	"output",
+	"pdf",
 	"txt"
     ],
     "ignore_paths": [
@@ -15,7 +18,9 @@
 	".git"
     ],
     "ignore_files": {
-        "LICENSE": { "reason": "top level LICENSE file" }
+        "LICENSE": { "reason": "top level LICENSE file" },
+        "AUTHORS": { "reason": "authors file" }
     },
     "default_license": "Apache-2.0"
 }
+

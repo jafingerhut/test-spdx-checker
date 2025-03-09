@@ -77,6 +77,23 @@ repositories:
 + `.pcap`
 + `.bin`
 
+Below is a subset of the file name suffixes for programming language
+and data file formats that the
+[`addlicense`](https://github.com/google/addlicense) program is
+written to be able to add copyright and license information into:
+
++ General purpose programming languages:
+  + `.c` `.h` `.java` `.js` `.py`
++ Specialized programming languages:
+  + `.css` `.sh` `.dockerfile` `.bzl` `.el` `.sql` `.j2`
++ Data file formats:
+  + `.proto` `.yaml` `.yml` `.toml` `.html` (but not `.htm`) `.xml`
+
+You can find the complete list of file name suffixes it supports in
+its source code here:
+
++ https://github.com/google/addlicense/blob/master/main.go#L291-L319
+
 Some text data file formats are at least tricky to add comments to, or
 very specific to the library used to manipulate the file format.  It
 also seems more trouble than it is worth to require that they have an
@@ -84,10 +101,9 @@ SPDX-License-Identifier line:
 
 + `.adoc` - AsciiDoc source file, used for P4 specification documents
 + `.csv`
-+ `.drawio` - based on XML.  See `.xml`.
-+ `.graphml` - based on XML.  See `.xml`.
-+ `.htm`
-+ `.html`
++ `.drawio` - based on XML.  Not recognized by `addlicense`.
++ `.graphml` - based on XML.  Not recognized by `addlicense`.
++ `.htm` - Another suffix for `.html`, but not recognized by `addlicense`.
 + `.less` - several in p4lang.github.io repo.  Some kind of HTML / web
   page development data file format, I think.
 + `.mdk` - Madoko source files, still used in some older repos that we
@@ -98,11 +114,5 @@ SPDX-License-Identifier line:
   compiler back end.  Mostly checked in only when used for CI testing
   in p4c repo.
 + `.sty` - LaTeX source file for documentation.
-+ `.svg` - based on XML.  See `.xml`.
++ `.svg` - based on XML.  Not recognized by `addlicense`.
 + `.tex` - LaTeX source file for documentation.
-+ `.toml` - Based on Windows INI file format.  Can have comments, but
-  only appears to be used in p4lang repos for developers of languages
-  like Python and Rust, for the development tools of those programming
-  languages.
-+ `.xml` - possible to have comments, but seems low value to add
-  SPDX-License-Identifier comments

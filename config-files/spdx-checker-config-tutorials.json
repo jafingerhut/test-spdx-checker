@@ -10,12 +10,11 @@
     "ignore_directories": [
 	".git"
     ],
+    "ignore_files": {
+        "LICENSE": { "reason": "top level LICENSE file" }
+    },
     "default_license": "Apache-2.0",
     "other_licenses": {
-        "LICENSE": {
-	    "expected": null,
-	    "reason": "top level LICENSE file"
-	},
         "exercises/basic/receive.py": {
 	    "expected": "GPL-2.0-only",
 	    "reason": "imports scapy"
@@ -49,6 +48,14 @@
 	    "reason": "imports scapy"
 	},
         "exercises/link_monitor/probe_hdrs.py": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "imports scapy"
+	},
+        "exercises/link_monitor/send.py": {
+	    "expected": "GPL-2.0-only",
+	    "reason": "imports scapy"
+	},
+        "exercises/link_monitor/receive.py": {
 	    "expected": "GPL-2.0-only",
 	    "reason": "imports scapy"
 	},

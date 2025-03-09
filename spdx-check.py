@@ -8,10 +8,8 @@ import collections
 import json
 import os
 import re
+import subprocess
 import sys
-
-# TODO: This value should be read from the config file
-default_license = 'Apache-2.0'
 
 parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -21,11 +19,40 @@ recursively all of its subdirectories, checking that they have
 SPDX-License-Identifier comment lines with the expected software
 license ids.
 """)
-parser.add_argument('--root-dir', dest='rootdir', type=str)
-parser.add_argument('--config-file', dest='configfile', type=str)
-parser.add_argument('--verbosity', dest='verbosity', type=int, default=0)
+
 # TODO: The --save-to-file argument is not working; the parameter is not being recognized when the command is run.
 parser.add_argument('--save-to-file', dest='filename', type=str,default='default.txt')
+
+parser.add_argument('--root-dir', dest='rootdir', type=str, default=".",
+                    help="""The root directory, starting at which
+                    this program will make a recursive traversal of
+                    all files in all of its subdirectories.""")
+parser.add_argument('--config-file', dest='configfile', type=str,
+                    help="""The name of a configuration file, in JSON
+                    format, that can containg many additional options
+                    for which directories or files to skip checking,
+                    and what licene should be found in files that are
+                    checked.""")
+parser.add_argument('--addlicense-file', dest='addlicense_file', type=str,
+                    help="""A file name to write with a Bash script,
+                    that runs the command `addlicense` once for each
+                    file that is missing an SPDX license.  This script
+                    can be run to quickly add the desired license
+                    notice to many files.""")
+parser.add_argument('--addlicense-author', dest='addlicense_author', type=str,
+                    help="""The author to use in the `addlicense`
+                    commands created by the --addlicense-file option,
+                    instead of the first author in the git commit log
+                    for the file.""")
+parser.add_argument('--verbosity', dest='verbosity', type=int, default=0,
+                    help="""Verbosity 0 shows no output, only
+                    returning a 0 exit status if all files checked
+                    have the desired SPDX license id, non-0 if
+                    problems were encountered.  Verbosity 1 and 2 are
+                    good for showing more details about statistics of
+                    number of directories and files found of various
+                    kinds, and any SPDX license id problems found.""")
+
 args, remaining_args = parser.parse_known_args()
 
 config = {}
@@ -33,11 +60,17 @@ if args.configfile:
     with open(args.configfile, 'r') as f:
         contents = f.read()
     config = json.loads(contents)
+else:
+    print("Must provide '--config-file <filename>' command line argument.")
+    sys.exit(1)
 
 config['ignored_suffixes'] = set(config.get('ignored_suffixes', []))
 config['other_licenses'] = config.get('other_licenses', {})
 
 if 'default_license' not in config:
+    print("top level keys found in config file:")
+    for k in sorted(config.keys()):
+        print("    %s" % (k))
     print("config file must define a key 'default_license' with a string value.",
           file=sys.stderr)
     sys.exit(1)
@@ -53,6 +86,11 @@ def suffix_after_dot(s):
         suffix = None
     return suffix
 
+def license_string(s):
+    if s is None:
+        return "(none)"
+    return s
+
 # Comment characters in various programming languages / configuration
 # file formats:
 
@@ -62,6 +100,7 @@ def suffix_after_dot(s):
 # " - Vim configuration file
 # ;; - Emacs Elisp
 # % - LaTeX source file
+# dnl - some GNU Automake files https://www.gnu.org/software/automake/manual/1.7.9/automake.html
 
 def spdx_line_errors_warnings(lines, expected_license, config, verbose=False):
     license_id_lines = []
@@ -75,13 +114,19 @@ def spdx_line_errors_warnings(lines, expected_license, config, verbose=False):
         line = line.rstrip()
         if line != "":
             all_lines_blank = False
-        if args.verbosity >= 4:
+        if args.verbosity >= 5:
             partial_match = 'SPDX-License-Identifier' in line
         if 'SPDX-License-Identifier' in line:
-            match = re.search(r"""^\s*(#|\*|//|/\*|"|;;|%)?\s*SPDX-License-Identifier:\s+(.*)$""", line)
+            match = re.search(r"""^\s*(#|\*|//|/\*|"|;;|%|dnl)?\s*SPDX-License-Identifier:\s+(.*)$""", line)
             if match:
-                license_id_lines.append(line)
                 license = match.group(2)
+                # In C/C++/Java files, there might be "*/" at the end
+                # of the line.  If so, remove it from the license
+                # found.
+                match = re.search(r"""^(.*?)\s*\*\/\s*$""", license)
+                if match:
+                    license = match.group(1)
+                license_id_lines.append(line)
             else:
                 malformed_id_lines.append(line)
         if verbose:
@@ -105,12 +150,8 @@ def spdx_line_errors_warnings(lines, expected_license, config, verbose=False):
                "" % (len(license_id_lines)))
         errors.append(msg)
     elif len(license_id_lines) == 0:
-        if expected_license is None:
-            # Then it is expected not to find a license id line
-            pass
-        else:
-            msg = "Found no SPDX-License-Identifier line"
-            errors.append(msg)
+        msg = "Found no SPDX-License-Identifier line"
+        errors.append(msg)
     if len(malformed_id_lines) != 0:
         msg = ("Found %d lines with SPDX-License-Identifier but incorrect syntax"
                "" % (len(malformed_id_lines)))
@@ -123,19 +164,65 @@ def spdx_line_errors_warnings(lines, expected_license, config, verbose=False):
     return errors, warnings, all_lines_blank, generated_file, license
 
 
+# Determine the author name and year that the file was first
+# committed, via 'git log <filename>', and finding the last
+# (i.e. oldest) commit, which should be the one that added the file.
+
+def get_file_first_commit_info(fullname):
+    cmd = ['git', 'log', fullname]
+    got_exception = False
+    try:
+        completed = subprocess.run(cmd, capture_output=True,
+                                   encoding='utf-8')
+        prev_line_was_author = False
+        num_commits = 0
+        author = None
+        year_str = None
+        for line in completed.stdout.splitlines():
+            if prev_line_was_author:
+                match = re.search(r"""^Date:\s*(.*)\s*$""", line)
+                if match:
+                    prev_line_was_author = False
+                    fulldate = match.group(1)
+                    # Example date output from git log:
+                    # Sun Jan 26 17:28:18 2025 -0500
+                    match = re.search(r"""^\S+\s+\S+\s+\S+\s+\S+\s+(\d+)\s+\S+\s*$""", fulldate)
+                    if match:
+                        year_str = match.group(1)
+            match = re.search(r"""^Author:\s*(.*)\s*$""", line)
+            if match:
+                author = match.group(1)
+                num_commits += 1
+                prev_line_was_author = True
+                # Remove email address in angle brackets, if present
+                match = re.search(r"""^(.*?)\s*<.*>\s*$""", author)
+                if match:
+                    author = match.group(1)
+            else:
+                prev_line_was_author = False
+    except Exception as e:
+        got_exception = True
+        print("dbg e=%s" % (e))
+    return got_exception, num_commits, author, year_str
+
+
 def walk_directory(path, config):
+    exit_status = 0
     spdx_errors = {}
     spdx_errors_filename_suffixes = collections.defaultdict(int)
     filenames_without_suffix = []
     spdx_warnings = {}
     auto_generated_file = {}
+    symbolic_links = {}
     empty_file = {}
     spdx_unexpected_license = {}
     spdx_good = {}
+    spdx_good_count_by_license = collections.defaultdict(int)
     spdx_ignored_suffix = {}
     exception_reading = {}
     ignore_directories = config.get('ignore_directories', [])
     ignore_paths = config.get('ignore_paths', [])
+    ignore_files = config.get('ignore_files', {})
     all_directories = []
     skipped_directories = []
     for root, dirs, files in os.walk(path):
@@ -176,18 +263,28 @@ def walk_directory(path, config):
                     skip_dir = True
                     break
         if skip_dir:
-            if args.verbosity >= 3:
+            if args.verbosity >= 4:
                 print("Skipping directory: %s" % (root))
             skipped_directories.append(root)
             continue
-        if args.verbosity >= 3:
+        if args.verbosity >= 4:
             print("Checking directory: %s (without rootdir %s)" % (root, dir_without_rootdir))
         for file_name in files:
             fullname = os.path.join(root, file_name)
+            if os.path.islink(fullname):
+                # Ignore symbolic links.  If they point at no file at
+                # all, then it would fail to read their contents.  If
+                # they do point at a file in the directory tree, then
+                # we will find them and read them by their
+                # non-symbolic-link path name elsewhere in the file
+                # scan.
+                symbolic_links[fullname] = True
+                continue
             fullname_without_rootdir = os.path.join(dir_without_rootdir,
                                                     file_name)
+            if fullname_without_rootdir in ignore_files:
+                continue
             suffix = suffix_after_dot(file_name)
-            #print("Suffix: %s File: %s" % (suffix, fullname))
             if suffix in config['ignored_suffixes']:
                 spdx_ignored_suffix[fullname] = suffix
                 continue
@@ -202,7 +299,7 @@ def walk_directory(path, config):
                 expected_license = config['other_licenses'][fullname_without_rootdir]['expected']
             else:
                 expected_license = config['default_license']
-            if args.verbosity >= 3:
+            if args.verbosity >= 4:
                 print("Checking file: %s" % (fullname))
             extra_debug = False
             #if fullname_without_rootdir == "go/p4/config/v1/p4info.pb.go":
@@ -222,8 +319,9 @@ def walk_directory(path, config):
             elif generated_file:
                 auto_generated_file[fullname] = True
             elif not (errors or warnings):
-                if (expected_license is None) or (license == expected_license):
+                if license == expected_license:
                     spdx_good[fullname] = license
+                    spdx_good_count_by_license[license_string(license)] += 1
                 else:
                     spdx_unexpected_license[fullname] = {
                         'expected': expected_license,
@@ -233,11 +331,12 @@ def walk_directory(path, config):
     for fullname in sorted(exception_reading.keys()):
         print("EXCEPTION: while reading file '%s': %s"
               "" % (fullname, exception_reading[fullname]))
-    if args.verbosity >= 2:
+        exit_status = 1
+    if args.verbosity >= 3:
         for fullname in sorted(spdx_ignored_suffix.keys()):
             print("IGNORED SUFFIX: %s: %s" % (spdx_ignored_suffix[fullname],
                                               fullname))
-    if args.verbosity >= 1:
+    if args.verbosity >= 2:
         for fullname in sorted(spdx_errors.keys()):
             for msg in spdx_errors[fullname]:
                 print("ERROR: %s: %s" % (fullname, msg))
@@ -252,32 +351,84 @@ def walk_directory(path, config):
             if args.filename:
                 with open(args.filename, 'a') as file:
                     file.write(fullname + '\n')
-    if args.verbosity >= 2:
+
+    if args.verbosity >= 3:
         for fullname in sorted(spdx_good.keys()):
             print("GOOD: %s: %s" % (spdx_good[fullname], fullname))
 
-    print("%d files where exception occurred while reading its contents" % (len(exception_reading)))
-    print("%d directories skipped out of %d directories total"
-          "" % (len(skipped_directories), len(all_directories)))
-    print("%d files where SPDX check was skipped because of file name suffix" % (len(spdx_ignored_suffix)))
-    for fname in filenames_without_suffix:
-        print("    ERROR file without suffix: %s" % (fname))
-    print("%d files with signature lines indicating they were auto-generated."
-          "" % (len(auto_generated_file)))
-    print("%d empty (all whitespace) files."
-          "" % (len(empty_file)))
-    print("%s files with neither errors nor warnings" % (len(spdx_good)))
-    print("")
-    print("%d files with warnings" % (len(spdx_warnings)))
-    print("%s files with unexpected licenses" % (len(spdx_unexpected_license)))
-    print("%d files with errors" % (len(spdx_errors)))
-    for suffix in sorted(spdx_errors_filename_suffixes.keys()):
-        print("    %d error files has file name suffix '.%s'"
-              "" % (spdx_errors_filename_suffixes[suffix], suffix))
+    if args.verbosity >= 1:
+        print("%d files where exception occurred while reading its contents" % (len(exception_reading)))
+        print("%d directories skipped out of %d directories total"
+              "" % (len(skipped_directories), len(all_directories)))
+        print("%d files where SPDX check was skipped because of file name suffix" % (len(spdx_ignored_suffix)))
+    if args.verbosity >= 3:
+        for fname in filenames_without_suffix:
+            print("    NOTE file without suffix: %s" % (fname))
+    if args.verbosity >= 1:
+        print("%d files with signature lines indicating they were auto-generated."
+              "" % (len(auto_generated_file)))
+        print("%d symbolic links (contents ignored)."
+              "" % (len(symbolic_links)))
+        print("%d empty (all whitespace) files."
+              "" % (len(empty_file)))
+        print("%s files with neither errors nor warnings" % (len(spdx_good)))
+        if args.verbosity >= 2:
+            for license in sorted(spdx_good_count_by_license.keys()):
+                print("    %d with license: %s"
+                      "" % (spdx_good_count_by_license[license],
+                            license))
+        print("")
+        print("%d files with warnings" % (len(spdx_warnings)))
+        print("%s files with unexpected licenses" % (len(spdx_unexpected_license)))
+        print("%d files with errors" % (len(spdx_errors)))
+        for suffix in sorted(spdx_errors_filename_suffixes.keys()):
+            print("    %d error files has file name suffix '.%s'"
+                  "" % (spdx_errors_filename_suffixes[suffix], suffix))
+    if args.addlicense_file:
+        addlicense_script_lines = []
+        num_addlicense_cmds = 0
+        for fullname in sorted(spdx_errors.keys()):
+            got_exception, num_commits, author, year_str = get_file_first_commit_info(fullname)
+            # If the user specified the --addlicense-author option,
+            # use the author specified there instead of what was found
+            # in the commit log.
+            if args.addlicense_author:
+                author = args.addlicense_author
+            if got_exception:
+                msg = ("# got exception trying to get git log of file: %s"
+                       "" % (fullname))
+                addlicense_script_lines.append(msg)
+            else:
+                msg = ("# %d commits found for file: %s"
+                       "" % (num_commits, fullname))
+                addlicense_script_lines.append(msg)
+                if author is None or year_str is None:
+                    msg = ("# author=%s year_str=%s at least one is None, so no addlicense command"
+                           "" % (author, year_str))
+                    addlicense_script_lines.append(msg)
+                else:
+                    msg = ("addlicense -c '%s' -l apache -s -y %s '%s'"
+                           "" % (author, year_str, fullname))
+                    addlicense_script_lines.append(msg)
+                    num_addlicense_cmds += 1
+        with open(args.addlicense_file, 'w') as f:
+            print("#! /bin/bash", file=f)
+            print("", file=f)
+            for line in addlicense_script_lines:
+                print(line, file=f)
+        if args.verbosity >= 1:
+            print("Wrote bash script with %d addlicense commands: %s"
+                  "" % (num_addlicense_cmds, args.addlicense_file))
+    if len(spdx_unexpected_license) != 0 or len(spdx_errors) != 0:
+        exit_status = 1
+    return exit_status
 
 
 rootdir = "."
 if args.rootdir:
     rootdir = args.rootdir
 
-walk_directory(rootdir, config)
+exit_status = walk_directory(rootdir, config)
+#if args.verbosity >= 1:
+#    print("dbg exit_status=%d" % (exit_status))
+sys.exit(exit_status)

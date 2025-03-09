@@ -1,12 +1,8 @@
 {
     "ignored_suffixes": [
-	"conf",
-	"dockerignore",
 	"gitignore",
 	"gitmodules",
-	"json",
 	"md",
-	"patch",
 	"txt"
     ],
     "ignore_directories": [
@@ -16,5 +12,9 @@
     "ignore_paths": [
 	".github"
     ],
+    "ignore_files": {
+        "LICENSE": { "reason": "top level LICENSE file" },
+        "README": { "reason": "README file" }
+    },
     "default_license": "Apache-2.0"
 }

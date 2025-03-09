@@ -1,0 +1,36 @@
+{
+    "ignored_suffixes": [
+	"bin",
+	"conf",
+	"diff",
+	"dot",
+	"graffle",
+	"gz",
+	"jpg",
+	"json",
+	"md",
+	"mdk",
+	"mod",
+	"odt",
+	"p4i",
+	"patch",
+	"pcap",
+	"pdf",
+	"png",
+	"pptx",
+	"spec",
+	"sum",
+	"svg",
+	"txt",
+	"txtpb",
+	"zip"
+    ],
+    "ignore_paths": [
+	"vscode-preproc-highlighting/sonic-pins"
+    ],
+    "ignore_directories": [
+	".git"
+    ],
+    "default_license": "Apache-2.0"
+}
+

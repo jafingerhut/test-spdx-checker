@@ -1,18 +1,19 @@
 {
     "ignored_suffixes": [
-	"csv",
+	"cfg",
+	"diff",
+	"dockerignore",
 	"gitignore",
-	"gitmodules",
+	"json",
 	"md",
 	"patch",
-	"png",
-	"rst",
-	"txt",
-	"yapf"
+	"txt"
+    ],
+    "ignore_paths": [
+	".github"
     ],
     "ignore_directories": [
-	".git",
-	"third_party"
+	".git"
     ],
     "default_license": "Apache-2.0"
 }

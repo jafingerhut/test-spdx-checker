@@ -2,7 +2,6 @@
     "ignored_suffixes": [
 	"bazelrc",
 	"bazelversion",
-	"bzl",
 	"cfg",
 	"dockerignore",
 	"gitignore",
@@ -10,19 +9,90 @@
 	"graphml",
 	"json",
 	"md",
+	"odg",
+	"otf",
+	"out",
 	"png",
 	"pptx",
 	"rst",
 	"sty",
 	"supp",
 	"test",
-	"txt"
+	"ttf",
+	"txt",
+	"yang"
     ],
     "ignore_directories": [
-	".git"
+	".git",
 	"third_party"
     ],
     "ignore_paths": [
 	".github"
-    ]
+    ],
+    "ignore_files": {
+        "LICENSE": { "reason": "top level LICENSE file" }
+    },
+    "default_license": "Apache-2.0",
+    "other_licenses": {
+        "frontends_extra/cpp/m4/ax_pthread.m4": {
+	    "expected": "GPL-3.0-or-later",
+	    "reason": "Automake build file copied from GPL v3 source"
+	},
+        "m4/ax_pthread.m4": {
+	    "expected": "GPL-3.0-or-later",
+	    "reason": "Automake build file copied from GPL v3 source"
+	},
+        "proto/m4/ax_pthread.m4": {
+	    "expected": "GPL-3.0-or-later",
+	    "reason": "Automake build file copied from GPL v3 source"
+	},
+        "targets/bmv2/m4/ax_prefix_config_h.m4": {
+	    "expected": "GPL-3.0-or-later",
+	    "reason": "Automake build file copied from GPL v3 source"
+	},
+        "targets/bmv2/m4/ax_pthread.m4": {
+	    "expected": "GPL-3.0-or-later",
+	    "reason": "Automake build file copied from GPL v3 source"
+	},
+        "proto/m4/pkg.m4": {
+	    "expected": "GPL-2.0-or-later",
+	    "reason": "Automake build file copied from GPL v2 source"
+	},
+        "frontends_extra/cpp/m4/ax_cxx_compile_stdcxx_11.m4": {
+	    "expected": "FSFAP",
+	    "reason": "Automake build file copied from FSFAP source"
+	},
+        "m4/ax_cxx_compile_stdcxx_11.m4": {
+	    "expected": "FSFAP",
+	    "reason": "Automake build file copied from FSFAP source"
+	},
+        "m4/ax_prog_doxygen.m4": {
+	    "expected": "FSFAP",
+	    "reason": "Automake build file copied from FSFAP source"
+	},
+        "proto/m4/ax_boost_base.m4": {
+	    "expected": "FSFAP",
+	    "reason": "Automake build file copied from FSFAP source"
+	},
+        "proto/m4/ax_boost_system.m4": {
+	    "expected": "FSFAP",
+	    "reason": "Automake build file copied from FSFAP source"
+	},
+        "proto/m4/ax_boost_thread.m4": {
+	    "expected": "FSFAP",
+	    "reason": "Automake build file copied from FSFAP source"
+	},
+        "proto/m4/ax_compare_version.m4": {
+	    "expected": "FSFAP",
+	    "reason": "Automake build file copied from FSFAP source"
+	},
+        "proto/m4/ax_cxx_compile_stdcxx_11.m4": {
+	    "expected": "FSFAP",
+	    "reason": "Automake build file copied from FSFAP source"
+	},
+        "targets/bmv2/m4/ax_cxx_compile_stdcxx_11.m4": {
+	    "expected": "FSFAP",
+	    "reason": "Automake build file copied from FSFAP source"
+	}
+    }
 }
