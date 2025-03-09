@@ -24,6 +24,8 @@ license ids.
 parser.add_argument('--root-dir', dest='rootdir', type=str)
 parser.add_argument('--config-file', dest='configfile', type=str)
 parser.add_argument('--verbosity', dest='verbosity', type=int, default=0)
+# TODO: The --save-to-file argument is not working; the parameter is not being recognized when the command is run.
+parser.add_argument('--save-to-file', dest='filename', type=str,default='default.txt')
 args, remaining_args = parser.parse_known_args()
 
 config = {}
@@ -247,6 +249,9 @@ def walk_directory(path, config):
                   "" % (fullname,
                         spdx_unexpected_license[fullname]['expected'],
                         spdx_unexpected_license[fullname]['found']))
+            if args.filename:
+                with open(args.filename, 'a') as file:
+                    file.write(fullname + '\n')
     if args.verbosity >= 2:
         for fullname in sorted(spdx_good.keys()):
             print("GOOD: %s: %s" % (spdx_good[fullname], fullname))
