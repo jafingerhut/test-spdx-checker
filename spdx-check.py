@@ -97,6 +97,21 @@ def license_string(s):
 # % - LaTeX source file
 # dnl - some GNU Automake files https://www.gnu.org/software/automake/manual/1.7.9/automake.html
 
+def find_copyrights(lines, config, verbose=False):
+    all_lines_blank = True
+    copyright_lines = []
+    for line in lines:
+        line = line.rstrip()
+        if line == "":
+            continue
+        else:
+            all_lines_blank = False
+        match = re.search(r"""^\s*(#|\*|//|/\*|"|;;|%|dnl)?\s*([Cc][Oo][Pp][Yy][Rr][Ii][Gg][Hh][Tt])\s+(.*)$""", line)
+        if match:
+            rest_of_line = match.group(3)
+            copyright_lines.append(rest_of_line)
+    return copyright_lines
+
 def spdx_line_errors_warnings(lines, expected_license, config, verbose=False):
     license_id_lines = []
     malformed_id_lines = []
@@ -220,6 +235,7 @@ def walk_directory(path, config):
     ignore_files = config.get('ignore_files', {})
     all_directories = []
     skipped_directories = []
+    copyright_info = {}
     for root, dirs, files in os.walk(path):
         all_directories.append(root)
         dir_without_rootdir = root[len(path)+1:]
@@ -297,6 +313,13 @@ def walk_directory(path, config):
             if args.verbosity >= 4:
                 print("Checking file: %s" % (fullname))
             extra_debug = False
+            if file_name.startswith('LICENSE') or file_name.startswith('COPYING'):
+                # Then the word 'copyright' often appears in prose
+                # text as the first word of a line.  Do not bother
+                # analyzing the contents of these files.
+                pass
+            else:
+                copyright_info[fullname] = find_copyrights(lines, config, extra_debug)
             #if fullname_without_rootdir == "go/p4/config/v1/p4info.pb.go":
             #    extra_debug = True
             errors, warnings, all_lines_blank, generated_file, license = spdx_line_errors_warnings(lines, expected_license, config, extra_debug)
@@ -410,6 +433,62 @@ def walk_directory(path, config):
         if args.verbosity >= 1:
             print("Wrote bash script with %d addlicense commands: %s"
                   "" % (num_addlicense_cmds, args.addlicense_file))
+    if args.verbosity >= 1:
+        hist = collections.defaultdict(int)
+        year_range_ending_in_present = []
+        open_ended_year_range = []
+        commas_between_years = []
+        single_year = []
+        has_c_in_parens = []
+        unrecognized_pattern_lines = []
+        unrecognized_pattern = collections.defaultdict(list)
+        for fullname in copyright_info:
+            num_copyright_lines = len(copyright_info[fullname])
+            hist[num_copyright_lines] += 1
+            for line in copyright_info[fullname]:
+                match = re.search(r"""^\([Cc]\)\s*(.*)$""", line)
+                if match:
+                    has_c_in_parens.append(line)
+                    rest_of_line = match.group(1)
+                else:
+                    rest_of_line = line
+                match = re.search(r"""^(\d+)-present""", rest_of_line)
+                if match:
+                    year_range_ending_in_present.append(line)
+                    continue
+                match = re.search(r"""^(\d+)-""", rest_of_line)
+                if match:
+                    open_ended_year_range.append(line)
+                    continue
+                match = re.search(r"""^(\d+),""", rest_of_line)
+                if match:
+                    commas_between_years.append(line)
+                    continue
+                match = re.search(r"""^(\d+)\s+""", rest_of_line)
+                if match:
+                    single_year.append(line)
+                    continue
+                unrecognized_pattern_lines.append(line)
+                unrecognized_pattern[fullname].append(line)
+        for num_copyright_lines in sorted(hist.keys()):
+            print("%d files with %d copyright lines"
+                  "" % (hist[num_copyright_lines], num_copyright_lines))
+        print("%d copyright lines with (c) or (C)" % (len(has_c_in_parens)))
+        print("%d copyright lines with '<year>-present'"
+              "" % (len(year_range_ending_in_present)))
+        print("%d copyright lines with '<year>-'"
+              "" % (len(open_ended_year_range)))
+        print("%d copyright lines with comma-separated years"
+              "" % (len(commas_between_years)))
+        print("%d copyright lines with single year"
+              "" % (len(single_year)))
+        print("%d copyright lines with unrecognized pattern"
+              "" % (len(unrecognized_pattern_lines)))
+        if len(unrecognized_pattern_lines) > 0:
+            print("Details of unrecognized patterns:")
+            for fullname in sorted(unrecognized_pattern.keys()):
+                for line in unrecognized_pattern[fullname]:
+                    print("    %s %s" % (line, fullname))
     if len(spdx_unexpected_license) != 0 or len(spdx_errors) != 0:
         exit_status = 1
     return exit_status
