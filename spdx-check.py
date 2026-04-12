@@ -421,7 +421,7 @@ def walk_directory(path, config):
                            "" % (author, year_str))
                     addlicense_script_lines.append(msg)
                 else:
-                    msg = ("addlicense -c '%s' -l apache -s -y %s '%s'"
+                    msg = ("addlicense -c '%s' -l apache -s=only -y %s '%s'"
                            "" % (author, year_str, fullname))
                     addlicense_script_lines.append(msg)
                     num_addlicense_cmds += 1
