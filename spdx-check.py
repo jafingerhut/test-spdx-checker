@@ -35,9 +35,17 @@ parser.add_argument('--addlicense-file', dest='addlicense_file', type=str,
                     file that is missing an SPDX license.  This script
                     can be run to quickly add the desired license
                     notice to many files.""")
-parser.add_argument('--addlicense-author', dest='addlicense_author', type=str,
-                    help="""The author to use in the `addlicense`
-                    commands created by the --addlicense-file option,
+parser.add_argument('--reuse-file', dest='reuse_file', type=str,
+                    help="""A file name to write with a Bash script,
+                    that runs the command `reuse annotate` once for each
+                    file that is missing an SPDX license.  This script
+                    can be run to quickly add the desired license
+                    notice to many files.""")
+parser.add_argument('--copyright-holder', dest='copyright_holder', type=str,
+                    help="""The copyright holder name to use in the
+                    `addlicense` commands created by the
+                    --addlicense-file option, or the `reuse annotate`
+                    commands created by the --reuse-file option,
                     instead of the first author in the git commit log
                     for the file.""")
 parser.add_argument('--verbosity', dest='verbosity', type=int, default=0,
@@ -398,41 +406,61 @@ def walk_directory(path, config):
         for suffix in sorted(spdx_errors_filename_suffixes.keys()):
             print("    %d error files has file name suffix '.%s'"
                   "" % (spdx_errors_filename_suffixes[suffix], suffix))
-    if args.addlicense_file:
-        addlicense_script_lines = []
+    if args.addlicense_file or args.reuse_file:
+        addlicense_script_lines = ["set -x"]
         num_addlicense_cmds = 0
+        reuse_script_lines = ["set -x"]
+        num_reuse_cmds = 0
         for fullname in sorted(spdx_errors.keys()):
             got_exception, num_commits, author, year_str = get_file_first_commit_info(fullname)
-            # If the user specified the --addlicense-author option,
+            # If the user specified the --copyright-holder option,
             # use the author specified there instead of what was found
             # in the commit log.
-            if args.addlicense_author:
-                author = args.addlicense_author
+            copyright_holder = author
+            if args.copyright_holder:
+                copyright_holder = args.copyright_holder
             if got_exception:
                 msg = ("# got exception trying to get git log of file: %s"
                        "" % (fullname))
                 addlicense_script_lines.append(msg)
+                reuse_script_lines.append(msg)
             else:
                 msg = ("# %d commits found for file: %s"
                        "" % (num_commits, fullname))
                 addlicense_script_lines.append(msg)
-                if author is None or year_str is None:
-                    msg = ("# author=%s year_str=%s at least one is None, so no addlicense command"
-                           "" % (author, year_str))
+                reuse_script_lines.append(msg)
+                if copyright_holder is None or year_str is None:
+                    msg = ("# copyright_holder=%s year_str=%s at least one is None, so no addlicense command"
+                           "" % (copyright_holder, year_str))
                     addlicense_script_lines.append(msg)
+                    reuse_script_lines.append(msg)
                 else:
                     msg = ("addlicense -c '%s' -l apache -s=only -y %s '%s'"
                            "" % (author, year_str, fullname))
                     addlicense_script_lines.append(msg)
                     num_addlicense_cmds += 1
-        with open(args.addlicense_file, 'w') as f:
-            print("#! /bin/bash", file=f)
-            print("", file=f)
-            for line in addlicense_script_lines:
-                print(line, file=f)
-        if args.verbosity >= 1:
-            print("Wrote bash script with %d addlicense commands: %s"
-                  "" % (num_addlicense_cmds, args.addlicense_file))
+                    msg = ("reuse annotate -c '%s' -l Apache-2.0 -y %s --fallback-dot-license '%s'"
+                           "" % (copyright_holder, year_str, fullname))
+                    reuse_script_lines.append(msg)
+                    num_reuse_cmds += 1
+        if args.addlicense_file:
+            with open(args.addlicense_file, 'w') as f:
+                print("#! /bin/bash", file=f)
+                print("", file=f)
+                for line in addlicense_script_lines:
+                    print(line, file=f)
+            if args.verbosity >= 1:
+                print("Wrote bash script with %d addlicense commands: %s"
+                      "" % (num_addlicense_cmds, args.addlicense_file))
+        if args.reuse_file:
+            with open(args.reuse_file, 'w') as f:
+                print("#! /bin/bash", file=f)
+                print("", file=f)
+                for line in reuse_script_lines:
+                    print(line, file=f)
+            if args.verbosity >= 1:
+                print("Wrote bash script with %d reuse commands: %s"
+                      "" % (num_reuse_cmds, args.reuse_file))
     if args.verbosity >= 1:
         hist = collections.defaultdict(int)
         year_range_ending_in_present = []
