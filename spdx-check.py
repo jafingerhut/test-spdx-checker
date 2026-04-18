@@ -439,8 +439,8 @@ def walk_directory(path, config):
                            "" % (author, year_str, fullname))
                     addlicense_script_lines.append(msg)
                     num_addlicense_cmds += 1
-                    msg = ("reuse annotate -c '%s' -l Apache-2.0 -y %s --fallback-dot-license '%s'"
-                           "" % (copyright_holder, year_str, fullname))
+                    msg = ("reuse annotate -y %s -l Apache-2.0 -c '%s' --fallback-dot-license '%s'"
+                           "" % (year_str, copyright_holder, fullname))
                     reuse_script_lines.append(msg)
                     num_reuse_cmds += 1
         if args.addlicense_file:
