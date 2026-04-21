@@ -1,0 +1,13 @@
+{
+    "ignored_suffixes": [
+	"license"
+    ],
+    "ignore_paths": [
+	".github"
+    ],
+    "ignore_directories": [
+	".git",
+	"LICENSES"
+    ],
+    "default_license": "Apache-2.0"
+}
