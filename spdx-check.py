@@ -78,6 +78,48 @@ if 'default_license' not in config:
           file=sys.stderr)
     sys.exit(1)
 
+def get_current_file_contents(fullname):
+    try:
+        with open(fullname, 'r') as f:
+            contents = f.read()
+        lines = contents.splitlines()
+    except Exception as e:
+        return None, e
+    return lines, None
+
+def get_original_file_contents(fullname):
+    verbosity = 0
+    if fullname.endswith('status.proto'):
+        verbosity = 3
+    # Get all commit SHAs, and keep oldest one, output first
+    cmd1 = ['git', 'log', '--reverse', '--format=%H', '--', fullname]
+    try:
+        completed = subprocess.run(cmd1, capture_output=True,
+                                   encoding='utf-8')
+        lines = completed.stdout.splitlines()
+        if len(lines) == 0:
+            print("dbg get_original fullname='%s' no commit shas"
+                  "" % (fullname))
+        oldest_sha = completed.stdout.splitlines()[0]
+#        if verbosity >= 3:
+#            print("dbg get_original fullname='%s' oldest_sha='%s' completed.stdout.splitlines()=%s"
+#                  % (fullname, oldest_sha, completed.stdout.splitlines()))
+    except Exception as e:
+        return None, e
+    cmd2 = ['git', 'show', oldest_sha + ':' + fullname]
+    try:
+        completed = subprocess.run(cmd2, capture_output=True,
+                                   encoding='utf-8')
+        lines = completed.stdout.splitlines()
+        if verbosity >= 3:
+            print("dbg get_original fullname='%s' oldest_sha='%s' lines=%s"
+                  % (fullname, oldest_sha, lines))
+    except Exception as e:
+        return None, e
+    if fullname.endswith('status.proto'):
+        print("dbg fullname='%s' lines=%s" % (fullname, lines))
+    return lines, None
+
 def suffix_after_dot(s):
     """If the input string s contains a '.' character, return a string
     that is the part of s after the last '.' character.  If the input
@@ -105,20 +147,55 @@ def license_string(s):
 # % - LaTeX source file
 # dnl - some GNU Automake files https://www.gnu.org/software/automake/manual/1.7.9/automake.html
 
-def find_copyrights(lines, config, verbose=False):
+def parse_copyright(line, desc=""):
+    orig_line = line
+    match = re.search(r"""^\s*\([cC]\)(.*)$""", line)
+    if match:
+        line = match.group(1)
+    match = re.search(r"""^\s*(\d+(,\s*\d+)*)(.*)$""", line)
+    years = None
+    year_lst = None
+    if match:
+        years = match.group(1)
+        print("dbg line='%s' years='%s' desc='%s'" % (line, years, desc))
+        year_lst = [item.strip() for item in years.split(",")]
+        line = match.group(3)
+    match = re.search(r"""^\s*-\s*present(.*)$""", line)
+    if match:
+        line = match.group(1)
+    line = line.strip()
+    copyright_holder = line
+    return {
+        'copyright_holder': copyright_holder,
+        'years': years,
+        'year_lst': year_lst,
+        'orig_line': orig_line
+    }
+
+def find_copyrights(lines, config, verbose=False, desc=""):
     all_lines_blank = True
     copyright_lines = []
+    parsed_copyrights = []
     for line in lines:
         line = line.rstrip()
         if line == "":
             continue
         else:
             all_lines_blank = False
+        found_match = False
         match = re.search(r"""^\s*(#|\*|//|/\*|"|;;|%|dnl)?\s*([Cc][Oo][Pp][Yy][Rr][Ii][Gg][Hh][Tt])\s+(.*)$""", line)
         if match:
+            found_match = True
             rest_of_line = match.group(3)
+        match = re.search(r"""^\s*(#|\*|//|/\*|"|;;|%|dnl)?\s*(SPDX-FileCopyrightText:)\s+(.*)$""", line)
+        if match:
+            found_match = True
+            rest_of_line = match.group(3)
+        if found_match:
+            parsed_copyright_data = parse_copyright(rest_of_line, desc=desc)
+            parsed_copyrights.append(parsed_copyright_data)
             copyright_lines.append(rest_of_line)
-    return copyright_lines
+    return {'lines': copyright_lines, 'parsed_copyrights': parsed_copyrights}
 
 def spdx_line_errors_warnings(lines, expected_license, config, verbose=False):
     license_id_lines = []
@@ -226,6 +303,7 @@ def get_file_first_commit_info(fullname):
 
 def walk_directory(path, config):
     exit_status = 0
+    all_non_link_files = {}
     spdx_errors = {}
     spdx_errors_filename_suffixes = collections.defaultdict(int)
     filenames_without_suffix = []
@@ -244,6 +322,7 @@ def walk_directory(path, config):
     all_directories = []
     skipped_directories = []
     copyright_info = {}
+    orig_copyright_info = {}
     for root, dirs, files in os.walk(path):
         all_directories.append(root)
         dir_without_rootdir = root[len(path)+1:]
@@ -290,6 +369,7 @@ def walk_directory(path, config):
             print("Checking directory: %s (without rootdir %s)" % (root, dir_without_rootdir))
         for file_name in files:
             fullname = os.path.join(root, file_name)
+            relativetorootname = os.path.join(dir_without_rootdir, file_name)
             if os.path.islink(fullname):
                 # Ignore symbolic links.  If they point at no file at
                 # all, then it would fail to read their contents.  If
@@ -299,6 +379,7 @@ def walk_directory(path, config):
                 # scan.
                 symbolic_links[fullname] = True
                 continue
+            all_non_link_files[fullname] = {}
             fullname_without_rootdir = os.path.join(dir_without_rootdir,
                                                     file_name)
             if fullname_without_rootdir in ignore_files:
@@ -307,12 +388,18 @@ def walk_directory(path, config):
             if suffix in config['ignored_suffixes']:
                 spdx_ignored_suffix[fullname] = suffix
                 continue
-            try:
-                with open(fullname, 'r') as f:
-                    contents = f.read()
-                lines = contents.splitlines()
-            except Exception as e:
-                exception_reading[fullname] = e
+            # Read current file contents.
+            lines, exception = get_current_file_contents(fullname)
+            if exception is not None:
+                print("dbg fullname='%s' get_current_file_contents exception='%s'" % (fullname, exception))
+                exception_reading[fullname] = exception
+                continue
+            # Read contents of file when it was first added to the repo
+            # Note: This requires the relative path name, not fullname.
+            orig_lines, exception = get_original_file_contents(relativetorootname)
+            if exception is not None:
+                print("dbg fullname='%s' file_name='%s' get_original_file_contents exception='%s'" % (fullname, file_name, exception))
+                exception_reading[fullname] = exception
                 continue
             if fullname_without_rootdir in config['other_licenses']:
                 expected_license = config['other_licenses'][fullname_without_rootdir]['expected']
@@ -327,9 +414,8 @@ def walk_directory(path, config):
                 # analyzing the contents of these files.
                 pass
             else:
-                copyright_info[fullname] = find_copyrights(lines, config, extra_debug)
-            #if fullname_without_rootdir == "go/p4/config/v1/p4info.pb.go":
-            #    extra_debug = True
+                copyright_info[fullname] = find_copyrights(lines, config, extra_debug, desc='curr ' + fullname)
+                orig_copyright_info[fullname] = find_copyrights(orig_lines, config, extra_debug, desc='orig ' + fullname)
             errors, warnings, all_lines_blank, generated_file, license = spdx_line_errors_warnings(lines, expected_license, config, extra_debug)
             if errors:
                 spdx_errors[fullname] = errors
@@ -411,22 +497,43 @@ def walk_directory(path, config):
         num_addlicense_cmds = 0
         reuse_script_lines = ["set -x"]
         num_reuse_cmds = 0
-        for fullname in sorted(spdx_errors.keys()):
+        #for fullname in sorted(spdx_errors.keys()):
+        for fullname in sorted(all_non_link_files.keys()):
             got_exception, num_commits, author, year_str = get_file_first_commit_info(fullname)
-            # If the user specified the --copyright-holder option,
-            # use the author specified there instead of what was found
-            # in the commit log.
+            # Order of priority of choosing a copyright holder and year for the command:
+            # (1) user-specified value by --copyright-holder command line option
+            # (2) copyright holder in first Copyright line in first version of the file
+            # (3) name of author for commit that added first version of the file
             copyright_holder = author
+            copyright_holder_source = 'first_git_commit_author'
+#            if 'bridged' in fullname:
+#                print("dbg fullname='%s' has_orig?=%s"
+#                      "" % (fullname, fullname in orig_copyright_info))
+#                if fullname in orig_copyright_info:
+#                    print("dbg orig_copyright_info='%s'" % (orig_copyright_info[fullname]))
+            if fullname in orig_copyright_info:
+                x = orig_copyright_info[fullname]['parsed_copyrights']
+                if len(x) >= 1:
+                    if 'year_lst' in x[0]:
+                        if type(x[0]['year_lst']) is list:
+                            if len(x[0]['year_lst']) >= 1:
+                                copyright_holder = x[0]['copyright_holder']
+                                year_str = x[0]['year_lst'][0]
+                                copyright_holder_source = 'copyright_notice_first_file_version'
+                        else:
+                            print("dbg INTERNAL ERROR fullname='%s' x[0]['year_lst'] has type %s but expected list x[0]=%s"
+                                  "" % (fullname, type(x[0]['year_lst']), x[0]))
             if args.copyright_holder:
                 copyright_holder = args.copyright_holder
+                copyright_holder_source = 'command_line_option'
             if got_exception:
                 msg = ("# got exception trying to get git log of file: %s"
                        "" % (fullname))
                 addlicense_script_lines.append(msg)
                 reuse_script_lines.append(msg)
             else:
-                msg = ("# %d commits found for file: %s"
-                       "" % (num_commits, fullname))
+                msg = ("# %d commits found for file: %s copyright_holder_source: %s"
+                       "" % (num_commits, fullname, copyright_holder_source))
                 addlicense_script_lines.append(msg)
                 reuse_script_lines.append(msg)
                 if copyright_holder is None or year_str is None:
@@ -439,8 +546,16 @@ def walk_directory(path, config):
                            "" % (author, year_str, fullname))
                     addlicense_script_lines.append(msg)
                     num_addlicense_cmds += 1
-                    msg = ("reuse annotate -y %s -l Apache-2.0 -c '%s' --fallback-dot-license '%s'"
-                           "" % (year_str, copyright_holder, fullname))
+                    suffix = suffix_after_dot(fullname)
+                    style_opts = ""
+                    if suffix == "p4":
+                        # reuse annotate without a --style option
+                        # creates .license files for files with suffix
+                        # `.p4`.  Force commands on p4 source files to
+                        # use C style.
+                        style_opts = "--style c"
+                    msg = ("reuse annotate -y %s -l Apache-2.0 -c '%s' %s --fallback-dot-license '%s'"
+                           "" % (year_str, copyright_holder, style_opts, fullname))
                     reuse_script_lines.append(msg)
                     num_reuse_cmds += 1
         if args.addlicense_file:
@@ -471,9 +586,9 @@ def walk_directory(path, config):
         unrecognized_pattern_lines = []
         unrecognized_pattern = collections.defaultdict(list)
         for fullname in copyright_info:
-            num_copyright_lines = len(copyright_info[fullname])
+            num_copyright_lines = len(copyright_info[fullname]['lines'])
             hist[num_copyright_lines] += 1
-            for line in copyright_info[fullname]:
+            for line in copyright_info[fullname]['lines']:
                 match = re.search(r"""^\([Cc]\)\s*(.*)$""", line)
                 if match:
                     has_c_in_parens.append(line)
