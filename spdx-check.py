@@ -7,6 +7,7 @@ import argparse
 import collections
 import json
 import os
+import pathlib
 import re
 import subprocess
 import sys
@@ -389,18 +390,32 @@ def walk_directory(path, config):
                 spdx_ignored_suffix[fullname] = suffix
                 continue
             # Read current file contents.
-            lines, exception = get_current_file_contents(fullname)
+            # If there is another file with the same name except with
+            # a suffix of ".license" added on, read it instead of the
+            # original file.
+            fullname_to_read = fullname
+            fullname_with_dot_license_suffix = fullname + ".license"
+            file_path = pathlib.Path(fullname_with_dot_license_suffix)
+            if file_path.is_file():
+                fullname_to_read = fullname_with_dot_license_suffix
+            lines, exception = get_current_file_contents(fullname_to_read)
             if exception is not None:
-                print("dbg fullname='%s' get_current_file_contents exception='%s'" % (fullname, exception))
+                print("dbg fullname_to_read='%s' get_current_file_contents exception='%s'" % (fullname_to_read, exception))
                 exception_reading[fullname] = exception
-                continue
+                # Pretend like the file contains one non-blank line,
+                # so that it gets an error and an addlicense/reuse
+                # annotate command will be generated for it.
+                lines = ["foo"]
             # Read contents of file when it was first added to the repo
             # Note: This requires the relative path name, not fullname.
             orig_lines, exception = get_original_file_contents(relativetorootname)
             if exception is not None:
                 print("dbg fullname='%s' file_name='%s' get_original_file_contents exception='%s'" % (fullname, file_name, exception))
                 exception_reading[fullname] = exception
-                continue
+                # Pretend like the file contains one non-blank line,
+                # so that it gets an error and an addlicense/reuse
+                # annotate command will be generated for it.
+                orig_lines = ["foo"]
             if fullname_without_rootdir in config['other_licenses']:
                 expected_license = config['other_licenses'][fullname_without_rootdir]['expected']
             else:
@@ -497,8 +512,8 @@ def walk_directory(path, config):
         num_addlicense_cmds = 0
         reuse_script_lines = ["set -x"]
         num_reuse_cmds = 0
-        #for fullname in sorted(spdx_errors.keys()):
-        for fullname in sorted(all_non_link_files.keys()):
+        for fullname in sorted(spdx_errors.keys()):
+        #for fullname in sorted(all_non_link_files.keys()):
             got_exception, num_commits, author, year_str = get_file_first_commit_info(fullname)
             # Order of priority of choosing a copyright holder and year for the command:
             # (1) user-specified value by --copyright-holder command line option
