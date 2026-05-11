@@ -1,12 +1,12 @@
 {
     "ignored_suffixes": [
+	"license"
     ],
     "ignore_paths": [
-	".github",
-	"LICENSES"
     ],
     "ignore_directories": [
-	".git"
+	".git",
+	"LICENSES"
     ],
     "ignore_files": {
     },

@@ -1,39 +1,22 @@
 {
     "ignored_suffixes": [
-	"bazel",
-	"bazelignore",
-	"bazelrc",
-	"bazelversion",
-	"diff",
-	"dockerignore",
-	"drawio",
-	"gitignore",
-	"json",
-	"md",
-	"patch",
-	"png",
-	"png",
-	"pdf",
-	"pptx",
-	"svg",
-	"tex",
-	"txt"
+	"license"
     ],
     "ignore_paths": [
-	".github",
-	"debian",
-	"testdata/p4_14_errors_outputs",
-	"testdata/p4_14_samples_outputs",
-	"testdata/p4_16_dpdk_errors_outputs",
-	"testdata/p4_16_ebpf_errors_outputs",
-	"testdata/p4_16_errors_outputs",
-	"testdata/p4_16_pna_errors_outputs",
-	"testdata/p4_16_psa_errors_outputs",
-	"testdata/p4_16_samples_outputs",
-	"testdata/p4tc_samples_outputs"
+        "testdata/p4_14_errors_outputs",
+        "testdata/p4_14_samples_outputs",
+        "testdata/p4_16_dpdk_errors_outputs",
+        "testdata/p4_16_ebpf_errors_outputs",
+        "testdata/p4_16_errors_outputs",
+        "testdata/p4_16_pna_errors_outputs",
+        "testdata/p4_16_psa_errors_outputs",
+        "testdata/p4_16_samples_outputs",
+        "testdata/p4tc_samples_outputs",
+        "testdata/p4tc_samples_stf_outputs"
     ],
     "ignore_directories": [
-	".git"
+	".git",
+	"LICENSES"
     ],
     "default_license": "Apache-2.0"
 }

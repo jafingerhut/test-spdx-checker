@@ -1,32 +1,7 @@
 {
     "ignored_suffixes": [
-	"a",
-	"bazelignore",
-	"bazelversion",
-	"bin",
-	"csv",
-	"diff",
-	"drawio",
-	"gitignore",
-	"gitmodules",
-	"gz",
-	"jpg",
-	"json",
-	"md",
-	"md5",
-	"patch",
-	"pcap",
-	"pdf",
-	"png",
-	"pptx",
-	"schema",
-	"so",
-	"svg",
-	"tex",
-	"txt"
     ],
     "ignore_paths": [
-	".github",
 	"pkgsrc/p4-compilers/p4c/testdata/p4_14_errors_outputs",
 	"pkgsrc/p4-compilers/p4c/testdata/p4_14_samples_outputs",
 	"pkgsrc/p4-compilers/p4c/testdata/p4_16_dpdk_errors_outputs",
@@ -39,9 +14,7 @@
     ],
     "ignore_directories": [
 	".git",
-	"submodules",
-	"third-party",
-	"third_party"
+	"submodules"
     ],
     "default_license": "Apache-2.0"
 }

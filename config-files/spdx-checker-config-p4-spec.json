@@ -3,7 +3,6 @@
 	"license"
     ],
     "ignore_paths": [
-	".github"
     ],
     "ignore_directories": [
 	".git",

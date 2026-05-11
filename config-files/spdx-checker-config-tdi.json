@@ -1,20 +1,14 @@
 {
     "ignored_suffixes": [
-	"gitignore",
-	"gitmodules",
-	"json",
-	"md",
-	"txt"
+	"license"
     ],
     "ignore_directories": [
-	".git",
-	"third-party"
+	".git"
     ],
     "ignore_paths": [
-	".github"
+        "LICENSES"
     ],
     "ignore_files": {
-        "LICENSE": { "reason": "top level LICENSE file" }
     },
     "default_license": "Apache-2.0"
 }

@@ -1,20 +1,12 @@
 {
     "ignored_suffixes": [
-	"conf",
-	"dockerignore",
-	"gitignore",
-	"gitmodules",
-	"json",
-	"md",
-	"patch",
-	"txt"
+	"license"
     ],
     "ignore_directories": [
 	".git",
-	"third-party"
+	"LICENSES"
     ],
     "ignore_paths": [
-	".github"
     ],
     "default_license": "Apache-2.0"
 }

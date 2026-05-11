@@ -17,7 +17,6 @@
         "LICENSES"
     ],
     "ignore_paths": [
-	".github"
     ],
     "ignore_files": {
         "py/LICENSE": { "reason": "LICENSE file" },
