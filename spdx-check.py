@@ -89,7 +89,7 @@ def get_current_file_contents(fullname):
     return lines, None
 
 def get_original_file_contents(fullname):
-    verbosity = 0
+    verbosity = args.verbosity
     if fullname.endswith('status.proto'):
         verbosity = 3
     # Get all commit SHAs, and keep oldest one, output first
@@ -99,8 +99,9 @@ def get_original_file_contents(fullname):
                                    encoding='utf-8')
         lines = completed.stdout.splitlines()
         if len(lines) == 0:
-            print("dbg get_original fullname='%s' no commit shas"
-                  "" % (fullname))
+            if verbosity >= 1:
+                print("dbg get_original fullname='%s' no commit shas"
+                      "" % (fullname))
         oldest_sha = completed.stdout.splitlines()[0]
 #        if verbosity >= 3:
 #            print("dbg get_original fullname='%s' oldest_sha='%s' completed.stdout.splitlines()=%s"
@@ -117,7 +118,7 @@ def get_original_file_contents(fullname):
                   % (fullname, oldest_sha, lines))
     except Exception as e:
         return None, e
-    if fullname.endswith('status.proto'):
+    if verbosity >= 3:
         print("dbg fullname='%s' lines=%s" % (fullname, lines))
     return lines, None
 
@@ -158,7 +159,8 @@ def parse_copyright(line, desc=""):
     year_lst = None
     if match:
         years = match.group(1)
-        print("dbg line='%s' years='%s' desc='%s'" % (line, years, desc))
+        if args.verbosity >= 3:
+            print("dbg line='%s' years='%s' desc='%s'" % (line, years, desc))
         year_lst = [item.strip() for item in years.split(",")]
         line = match.group(3)
     match = re.search(r"""^\s*-\s*present(.*)$""", line)
@@ -184,7 +186,7 @@ def find_copyrights(lines, config, verbose=False, desc=""):
         else:
             all_lines_blank = False
         found_match = False
-        match = re.search(r"""^\s*(#|\*|//|/\*|"|;;|%|dnl)?\s*([Cc][Oo][Pp][Yy][Rr][Ii][Gg][Hh][Tt])\s+(.*)$""", line)
+        match = re.search(r"""^\s*(#|\*|//|/\*|"|;;|%|dnl)?\s*([Cc][Oo][Pp][Yy][Rr][Ii][Gg][Hh][Tt])\s*(.*)$""", line)
         if match:
             found_match = True
             rest_of_line = match.group(3)
