@@ -12,6 +12,21 @@ import re
 import subprocess
 import sys
 
+month_name_to_month_num = {
+    'jan': 1,
+    'feb': 2,
+    'mar': 3,
+    'apr': 4,
+    'may': 5,
+    'jun': 6,
+    'jul': 7,
+    'aug': 8,
+    'sep': 9,
+    'oct': 10,
+    'nov': 11,
+    'dec': 12,
+}
+
 parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
     description="""
@@ -145,7 +160,7 @@ def license_string(s):
 # /* - C, C++, Java, P4
 # # - Bash, Python
 # " - Vim configuration file
-# ;; - Emacs Elisp
+# ; (or any number of consecutive ; characters) - Emacs Elisp
 # % - LaTeX source file
 # dnl - some GNU Automake files https://www.gnu.org/software/automake/manual/1.7.9/automake.html
 
@@ -186,7 +201,7 @@ def find_copyrights(lines, config, verbose=False, desc=""):
         else:
             all_lines_blank = False
         found_match = False
-        match = re.search(r"""^\s*(#|\*|//|/\*|"|;;|%|dnl)?\s*([Cc][Oo][Pp][Yy][Rr][Ii][Gg][Hh][Tt])\s*(.*)$""", line)
+        match = re.search(r"""^\s*(#|\*|//|/\*|"|;+|%|dnl)?\s*([Cc][Oo][Pp][Yy][Rr][Ii][Gg][Hh][Tt])\s*(.*)$""", line)
         if match:
             found_match = True
             rest_of_line = match.group(3)
@@ -276,6 +291,8 @@ def get_file_first_commit_info(fullname):
         num_commits = 0
         author = None
         year_str = None
+        month_int = None
+        day_of_month_int = None
         for line in completed.stdout.splitlines():
             if prev_line_was_author:
                 match = re.search(r"""^Date:\s*(.*)\s*$""", line)
@@ -284,9 +301,12 @@ def get_file_first_commit_info(fullname):
                     fulldate = match.group(1)
                     # Example date output from git log:
                     # Sun Jan 26 17:28:18 2025 -0500
-                    match = re.search(r"""^\S+\s+\S+\s+\S+\s+\S+\s+(\d+)\s+\S+\s*$""", fulldate)
+                    match = re.search(r"""^\S+\s+(\S+)\s+(\S+)\s+\S+\s+(\d+)\s+\S+\s*$""", fulldate)
                     if match:
-                        year_str = match.group(1)
+                        month_name = match.group(1)
+                        month_int = month_name_to_month_num.get(month_name.lower(), 0)
+                        day_of_month_int = int(match.group(2))
+                        year_str = match.group(3)
             match = re.search(r"""^Author:\s*(.*)\s*$""", line)
             if match:
                 author = match.group(1)
@@ -301,7 +321,7 @@ def get_file_first_commit_info(fullname):
     except Exception as e:
         got_exception = True
         print("dbg e=%s" % (e))
-    return got_exception, num_commits, author, year_str
+    return got_exception, num_commits, author, year_str, month_int, day_of_month_int
 
 
 def walk_directory(path, config):
@@ -516,11 +536,14 @@ def walk_directory(path, config):
         num_reuse_cmds = 0
         for fullname in sorted(spdx_errors.keys()):
         #for fullname in sorted(all_non_link_files.keys()):
-            got_exception, num_commits, author, year_str = get_file_first_commit_info(fullname)
+            got_exception, num_commits, author, year_str, month_int, day_of_month_int = get_file_first_commit_info(fullname)
             # Order of priority of choosing a copyright holder and year for the command:
             # (1) user-specified value by --copyright-holder command line option
             # (2) copyright holder in first Copyright line in first version of the file
             # (3) name of author for commit that added first version of the file
+            date_str = "0000-00-00"
+            if year_str and month_int and day_of_month_int:
+                date_str = "%s-%02d-%02d" % (year_str, month_int, day_of_month_int)
             copyright_holder = author
             copyright_holder_source = 'first_git_commit_author'
 #            if 'bridged' in fullname:
@@ -543,6 +566,8 @@ def walk_directory(path, config):
             if args.copyright_holder:
                 copyright_holder = args.copyright_holder
                 copyright_holder_source = 'command_line_option'
+            if copyright_holder is not None:
+                copyright_holder = date_str + " " + copyright_holder
             if got_exception:
                 msg = ("# got exception trying to get git log of file: %s"
                        "" % (fullname))
@@ -571,6 +596,8 @@ def walk_directory(path, config):
                         # `.p4`.  Force commands on p4 source files to
                         # use C style.
                         style_opts = "--style c"
+                    elif suffix == "stf":
+                        style_opts = "--style python"
                     msg = ("reuse annotate -y %s -l Apache-2.0 -c '%s' %s --fallback-dot-license '%s'"
                            "" % (year_str, copyright_holder, style_opts, fullname))
                     reuse_script_lines.append(msg)
