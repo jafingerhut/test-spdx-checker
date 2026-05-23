@@ -324,6 +324,25 @@ def get_file_first_commit_info(fullname):
     return got_exception, num_commits, author, year_str, month_int, day_of_month_int
 
 
+def get_copyright_notice_info(fullname, copyright_info_dict):
+    found_copyright_notice = False
+    year_str = None
+    copyright_holder = None
+    if fullname in copyright_info_dict:
+        x = copyright_info_dict[fullname]['parsed_copyrights']
+        if len(x) >= 1:
+            if 'year_lst' in x[0]:
+                if type(x[0]['year_lst']) is list:
+                    if len(x[0]['year_lst']) >= 1:
+                        found_copyright_notice = True
+                        copyright_holder = x[0]['copyright_holder']
+                        year_str = x[0]['year_lst'][0]
+                else:
+                    print("dbg INTERNAL ERROR fullname='%s' x[0]['year_lst'] has type %s but expected list x[0]=%s"
+                          "" % (fullname, type(x[0]['year_lst']), x[0]))
+    return found_copyright_notice, year_str, copyright_holder
+
+
 def walk_directory(path, config):
     exit_status = 0
     all_non_link_files = {}
@@ -346,6 +365,7 @@ def walk_directory(path, config):
     skipped_directories = []
     copyright_info = {}
     orig_copyright_info = {}
+    curr_copyright_info = {}
     for root, dirs, files in os.walk(path):
         all_directories.append(root)
         dir_without_rootdir = root[len(path)+1:]
@@ -453,6 +473,7 @@ def walk_directory(path, config):
             else:
                 copyright_info[fullname] = find_copyrights(lines, config, extra_debug, desc='curr ' + fullname)
                 orig_copyright_info[fullname] = find_copyrights(orig_lines, config, extra_debug, desc='orig ' + fullname)
+                curr_copyright_info[fullname] = find_copyrights(lines, config, extra_debug, desc='orig ' + fullname)
             errors, warnings, all_lines_blank, generated_file, license = spdx_line_errors_warnings(lines, expected_license, config, extra_debug)
             if errors:
                 spdx_errors[fullname] = errors
@@ -540,7 +561,8 @@ def walk_directory(path, config):
             # Order of priority of choosing a copyright holder and year for the command:
             # (1) user-specified value by --copyright-holder command line option
             # (2) copyright holder in first Copyright line in first version of the file
-            # (3) name of author for commit that added first version of the file
+            # (3) copyright holder in first Copyright line in the latest version of the file
+            # (4) name of author for commit that added first version of the file
             date_str = "0000-00-00"
             if year_str and month_int and day_of_month_int:
                 date_str = "%s-%02d-%02d" % (year_str, month_int, day_of_month_int)
@@ -551,18 +573,16 @@ def walk_directory(path, config):
 #                      "" % (fullname, fullname in orig_copyright_info))
 #                if fullname in orig_copyright_info:
 #                    print("dbg orig_copyright_info='%s'" % (orig_copyright_info[fullname]))
-            if fullname in orig_copyright_info:
-                x = orig_copyright_info[fullname]['parsed_copyrights']
-                if len(x) >= 1:
-                    if 'year_lst' in x[0]:
-                        if type(x[0]['year_lst']) is list:
-                            if len(x[0]['year_lst']) >= 1:
-                                copyright_holder = x[0]['copyright_holder']
-                                year_str = x[0]['year_lst'][0]
-                                copyright_holder_source = 'copyright_notice_first_file_version'
-                        else:
-                            print("dbg INTERNAL ERROR fullname='%s' x[0]['year_lst'] has type %s but expected list x[0]=%s"
-                                  "" % (fullname, type(x[0]['year_lst']), x[0]))
+            found1, year_str1, copyright_holder1 = get_copyright_notice_info(fullname, orig_copyright_info)
+            if found1:
+                copyright_holder_source = 'copyright_notice_first_file_version'
+                year_str = year_str1
+                copyright_holder = copyright_holder1
+            found1, year_str1, copyright_holder1 = get_copyright_notice_info(fullname, curr_copyright_info)
+            if found1:
+                copyright_holder_source = 'copyright_notice_current_file_version'
+                year_str = year_str1
+                copyright_holder = copyright_holder1
             if args.copyright_holder:
                 copyright_holder = args.copyright_holder
                 copyright_holder_source = 'command_line_option'
