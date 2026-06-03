@@ -105,8 +105,8 @@ def get_current_file_contents(fullname):
 
 def get_original_file_contents(fullname):
     verbosity = args.verbosity
-    if fullname.endswith('status.proto'):
-        verbosity = 3
+    #if fullname.endswith('status.proto'):
+    #    verbosity = 3
     # Get all commit SHAs, and keep oldest one, output first
     cmd1 = ['git', 'log', '--reverse', '--format=%H', '--', fullname]
     try:

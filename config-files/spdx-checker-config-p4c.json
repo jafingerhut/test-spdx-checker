@@ -3,6 +3,7 @@
 	"license"
     ],
     "ignore_paths": [
+        "build",
         "testdata/p4_14_errors_outputs",
         "testdata/p4_14_samples_outputs",
         "testdata/p4_16_dpdk_errors_outputs",

@@ -3,6 +3,7 @@
 	"license"
     ],
     "ignore_paths": [
+        "third_party"
     ],
     "ignore_directories": [
 	".git",
